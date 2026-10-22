@@ -224,6 +224,14 @@ function fmt(iso) { if (!iso) return '–'; const [y, m, d] = iso.split('-'); re
 const MAANDEN = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
 function fmtMaand(ym) { if (!ym) return '–'; const [y, m] = ym.split('-'); return `${MAANDEN[m - 1]} ${y}`; }
 const ditJaarMaand = () => today().slice(0, 7);
+const MAANDEN_VOL = ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december'];
+// speelt het lot mee in de huidige maand?
+function speeltDezeMaand(l) {
+  const nu = ditJaarMaand();
+  if (l.status === 'te-melden' || (l.speeltVanaf && l.speeltVanaf > nu)) return false;
+  if (l.laatsteSpeelmaand) return l.laatsteSpeelmaand >= nu;
+  return l.status === 'aangemeld';
+}
 const normIban = s => String(s || '').replace(/\s+/g, '').toUpperCase();
 const fmtIban = s => normIban(s).replace(/(.{4})/g, '$1 ').trim();
 function ibanOk(s) {
@@ -555,8 +563,7 @@ function vOverzicht() {
   h += `<div class="tiles">
     <div class="tile ${late ? 'bad' : ''}"><b>${open.length}</b><span>op te zeggen${late ? ` · ${late} te laat` : ''}</span></div>
     <div class="tile ${risicoMaand ? 'bad' : ''}"><b>${eur(lopendMaand)}</b><span>lopende kosten / maand</span></div>
-    <div class="tile"><b>${todo.length}</b><span>nog aan te melden</span></div>
-    <div class="tile"><b>${cadeaus.length}</b><span>cadeaus onderweg</span></div>
+    <a class="tile ok" href="#/loten/alle/alle" style="text-decoration:none;color:inherit"><b>${S.loten.filter(speeltDezeMaand).length}</b><span>actieve loten in ${MAANDEN_VOL[new Date().getMonth()]}</span></a>
     <div class="tile"><b>${S.loten.filter(l => l.status === 'opgezegd').length}</b><span>afgerond / opgezegd</span></div>
     <a class="tile" href="#/opbrengsten" style="text-decoration:none;color:inherit"><b>${eur(nettoTotaal())}</b><span>netto opbrengst →</span></a>
   </div>`;
