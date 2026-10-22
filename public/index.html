@@ -5,83 +5,129 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Loterij Tracker</title>
 <style>
-:root{--bg:#f5f6f8;--card:#fff;--text:#1d2330;--muted:#667085;--border:#e2e5eb;--accent:#2563eb;--accent-soft:#e8efff;--bad:#c4320a;--bad-soft:#fdecea;--warn:#b54708;--warn-soft:#fef4e6;--ok:#067647;--ok-soft:#e6f6ee}
-@media (prefers-color-scheme:dark){:root{--bg:#12151b;--card:#1b1f27;--text:#e6e8ec;--muted:#98a2b3;--border:#2c323d;--accent:#6c9cff;--accent-soft:#1e2a44;--bad:#ff8a70;--bad-soft:#3a1f1a;--warn:#fdb022;--warn-soft:#3a2c14;--ok:#47cd89;--ok-soft:#14301f}}
+:root{
+  --bg:#f3f4f7;--card:#fff;--text:#161b26;--muted:#5d6676;--faint:#8a93a3;--border:#e3e6ec;
+  --accent:#4338ca;--accent-soft:#eceafd;--bad:#c2281a;--bad-soft:#fdebe9;--warn:#b45309;--warn-soft:#fff3e2;
+  --ok:#047857;--ok-soft:#e3f5ec;--shadow:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06);
+  --vl:#7c3aed;--pcl:#e11d48;--bgl:#0284c7;--nl:#ea580c;--other:#64748b}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0f1218;--card:#181c24;--text:#e8eaef;--muted:#a0a8b8;--faint:#7a8394;--border:#2a303b;
+  --accent:#8b8cf8;--accent-soft:#23234a;--bad:#ff8577;--bad-soft:#3b1d1a;--warn:#fbbf24;--warn-soft:#382a12;
+  --ok:#4ade80;--ok-soft:#13301f;--shadow:none;--vl:#a78bfa;--pcl:#fb7185;--bgl:#38bdf8;--nl:#fb923c;--other:#94a3b8}}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-header{background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:5}
-.wrap{max-width:1000px;margin:0 auto;padding:0 16px}
+html{background:var(--bg);min-height:100%}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+header{background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:5;box-shadow:var(--shadow)}
+.wrap{max-width:1080px;margin:0 auto;padding:0 16px}
 header .wrap{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding-top:10px;padding-bottom:10px}
-header h1{font-size:17px;margin:0;margin-right:auto}
-nav{display:flex;gap:4px;flex-wrap:wrap}
-nav a{color:var(--muted);text-decoration:none;padding:6px 10px;border-radius:8px;font-weight:500}
+header h1{font-size:17px;margin:0;margin-right:auto;letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
+header h1 .logo{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--vl),var(--pcl));color:#fff;font-size:16px}
+nav{display:flex;gap:2px;flex-wrap:wrap}
+nav a{color:var(--muted);text-decoration:none;padding:6px 11px;border-radius:8px;font-weight:550;font-size:14.5px}
+nav a:hover{background:var(--bg);color:var(--text)}
 nav a.on{background:var(--accent-soft);color:var(--accent)}
-nav .badge{background:var(--bad);color:#fff;border-radius:10px;padding:0 6px;font-size:12px;margin-left:4px}
-main{padding:20px 0 60px}
-h2{font-size:20px;margin:0 0 12px}
-h3{font-size:15px;margin:22px 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
-.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px}
-.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:8px}
-.tile{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
-.tile b{display:block;font-size:26px;line-height:1.1}
+nav .badge{background:var(--bad);color:#fff;border-radius:10px;padding:0 6px;font-size:12px;margin-left:5px}
+main{padding:22px 0 64px}
+h2{font-size:22px;margin:0 0 14px;letter-spacing:-.015em}
+h3{font-size:13px;margin:26px 0 10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:650}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:8px}
+.tile{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:13px 15px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.tile::before{content:"";position:absolute;inset:0 auto 0 0;width:4px;background:var(--accent);opacity:.75}
+.tile b{display:block;font-size:25px;line-height:1.15;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
 .tile span{color:var(--muted);font-size:13px}
-.tile.bad b{color:var(--bad)}
+.tile.bad::before{background:var(--bad)} .tile.bad b{color:var(--bad)}
+.tile.ok::before{background:var(--ok)}
 .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .row .grow{flex:1;min-width:180px}
 .muted{color:var(--muted)}
 .small{font-size:13px}
-.chip{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12.5px;font-weight:500;background:var(--bg);border:1px solid var(--border);white-space:nowrap}
+.chip{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12.5px;font-weight:550;background:var(--bg);border:1px solid var(--border);white-space:nowrap}
 .chip.bad{background:var(--bad-soft);color:var(--bad);border-color:transparent}
 .chip.warn{background:var(--warn-soft);color:var(--warn);border-color:transparent}
 .chip.ok{background:var(--ok-soft);color:var(--ok);border-color:transparent}
 .chip.acc{background:var(--accent-soft);color:var(--accent);border-color:transparent}
-button,.btn{font:inherit;font-size:14px;padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);cursor:pointer;text-decoration:none;display:inline-block}
-button:hover,.btn:hover{border-color:var(--accent)}
+button,.btn{font:inherit;font-size:14px;font-weight:550;padding:6px 12px;border-radius:9px;border:1px solid var(--border);background:var(--card);color:var(--text);cursor:pointer;text-decoration:none;display:inline-block;line-height:1.4}
+button:hover,.btn:hover{border-color:var(--accent);color:var(--accent)}
 button.primary,.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button.primary:hover,.btn.primary:hover{filter:brightness(1.08);color:#fff}
 button.danger{color:var(--bad)}
 button.link{border:0;background:none;color:var(--muted);padding:4px 6px}
 label.cb{display:inline-flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;white-space:nowrap}
 form .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px 14px}
 form label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
-input,select,textarea{font:inherit;font-size:15px;padding:7px 9px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);width:100%}
-input[type=checkbox]{width:auto}
+input,select,textarea{font:inherit;font-size:15px;padding:7px 9px;border:1px solid var(--border);border-radius:9px;background:var(--bg);color:var(--text);width:100%}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+input[type=checkbox]{width:auto;accent-color:var(--accent)}
 textarea{min-height:60px}
 .actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
-details>summary{cursor:pointer;color:var(--accent);font-size:13.5px;margin-top:6px;list-style:none}
+details>summary{cursor:pointer;color:var(--accent);font-size:13.5px;font-weight:550;list-style:none}
 details>summary::-webkit-details-marker{display:none}
 details>summary::before{content:"▸ "}
 details[open]>summary::before{content:"▾ "}
 .copygrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:6px;margin-top:8px}
-.cp{text-align:left;display:flex;flex-direction:column;padding:6px 10px;min-width:0}
+.cp{text-align:left;display:flex;flex-direction:column;padding:6px 10px;min-width:0;font-weight:400}
 .cp span{font-size:11.5px;color:var(--muted)}
-.cp b{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cp b{font-weight:550;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cp.done{border-color:var(--ok);background:var(--ok-soft)}
-.edit{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:10px}
+.edit{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-top:10px}
 .edit label{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:3px}
-.lot{border-left:4px solid var(--border)}
-.lot.s-te-melden{border-left-color:var(--muted)}
-.lot.s-aangemeld{border-left-color:var(--warn)}
-.lot.s-aangemeld.late{border-left-color:var(--bad)}
-.lot.s-opgezegd{border-left-color:var(--ok);opacity:.85}
-.bar{height:6px;background:var(--bg);border-radius:4px;overflow:hidden;margin-top:8px}
+.edit label.cb{flex-direction:row;font-size:13px;color:var(--text)}
+
+/* loterijkleur */
+.lk-vl{--lk:var(--vl)} .lk-pcl{--lk:var(--pcl)} .lk-bgl{--lk:var(--bgl)} .lk-nl{--lk:var(--nl)} .lk-other{--lk:var(--other)}
+.lkbadge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:650;letter-spacing:.02em;color:var(--lk);text-transform:uppercase}
+.lkbadge::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--lk)}
+
+/* lotkaart */
+.lotgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:10px;align-items:start}
+.lotgrid .card{margin:0}
+.lot{border-top:4px solid var(--lk);padding-top:12px}
+.lot.st-ok{opacity:.8}
+.lot-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.lot-nr{font:700 21px/1.2 ui-monospace,"Cascadia Mono",Consolas,monospace;letter-spacing:-.01em;margin-top:2px;word-break:break-all}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font-size:12.5px;font-weight:650;white-space:nowrap}
+.pill.bad{background:var(--bad);color:#fff}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.pill.acc{background:var(--accent-soft);color:var(--accent)}
+.pill.muted{background:var(--bg);color:var(--muted);border:1px solid var(--border)}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin:12px 0 10px;padding:10px 12px;background:var(--bg);border-radius:10px}
+.fact span{display:block;font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:600}
+.fact b{display:block;font-size:15px;font-variant-numeric:tabular-nums}
+.fact em{display:block;font-style:normal;font-size:12.5px;color:var(--muted)}
+.fact.bad b,.fact.bad em{color:var(--bad)} .fact.warn em{color:var(--warn)} .fact.ok b{color:var(--ok)}
+.lot-meta{font-size:12.5px;color:var(--faint);display:flex;flex-wrap:wrap;gap:4px 12px}
+.lot-meta a{color:var(--faint)}
+.lot-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px}
+.lot details{margin-top:10px;border-top:1px dashed var(--border);padding-top:8px}
+
+/* filters */
+.filters{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.filters a{font-size:13.5px;font-weight:550;padding:5px 12px;border-radius:999px;border:1px solid var(--border);background:var(--card);color:var(--muted);text-decoration:none}
+.filters a.on{background:var(--text);color:var(--card);border-color:var(--text)}
+.groupkop{display:flex;align-items:center;gap:10px;margin:22px 0 10px}
+.groupkop .lkbadge{font-size:13px}
+
+.bar{height:6px;background:var(--bg);border-radius:4px;overflow:hidden;margin-top:10px}
 .bar i{display:block;height:100%;background:var(--ok)}
-.notice{padding:10px 14px;border-radius:10px;margin-bottom:12px;font-size:14px}
+.notice{padding:11px 14px;border-radius:12px;margin-bottom:12px;font-size:14px}
 .notice.warn{background:var(--warn-soft);color:var(--warn)}
 .notice.bad{background:var(--bad-soft);color:var(--bad)}
 .notice.info{background:var(--accent-soft);color:var(--accent)}
 .empty{color:var(--muted);padding:12px 0}
 a{color:var(--accent)}
 table{width:100%;border-collapse:collapse;font-size:14px}
-td,th{text-align:left;padding:7px 6px;border-bottom:1px solid var(--border)}
-th{color:var(--muted);font-weight:500;font-size:12.5px}
-#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:8px 16px;border-radius:999px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none}
+td,th{text-align:left;padding:8px 6px;border-bottom:1px solid var(--border)}
+th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:9px 18px;border-radius:999px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:10}
 #toast.show{opacity:1}
 .mono{font-family:ui-monospace,Consolas,monospace;font-size:13.5px}
 </style>
 </head>
 <body>
 <header><div class="wrap">
-  <h1>🎟️ Loterij Tracker</h1>
+  <h1><span class="logo">🎟️</span> Loterij Tracker</h1>
   <nav id="nav"></nav>
 </div></header>
 <main><div class="wrap" id="app"></div></main>
@@ -314,90 +360,159 @@ function render() {
   const [view, id, extra] = route();
   const urgent = S.loten.filter(l => (l.status === 'aangemeld' && !l.houden && l.deadline && diffDays(l.deadline) <= 0)
     || (l.onterechtOp && !l.teruggeboekt && diffDays(addDays(l.onterechtOp, STORNO_DAGEN)) <= 7 && diffDays(addDays(l.onterechtOp, STORNO_DAGEN)) >= 0)).length;
-  const tabs = [['overzicht', 'Overzicht'], ['acties', 'Acties'], ['opbrengsten', 'Opbrengsten'], ['bank', 'Bank'], ['deelnemers', 'Deelnemers'], ['backup', 'Backup']];
+  const tabs = [['overzicht', 'Overzicht'], ['loten', 'Loten'], ['acties', 'Acties'], ['opbrengsten', 'Opbrengsten'], ['bank', 'Bank'], ['deelnemers', 'Deelnemers'], ['backup', 'Backup']];
   const cur = { actie: 'acties', 'actie-nieuw': 'acties', 'actie-edit': 'acties', deelnemer: 'deelnemers', opbrengst: 'opbrengsten' }[view] || view;
   $('#nav').innerHTML = tabs.map(([k, t]) =>
     `<a href="#/${k}" class="${cur === k ? 'on' : ''}">${t}${k === 'overzicht' && urgent ? `<span class="badge">${urgent}</span>` : ''}</a>`).join('');
-  const views = { overzicht: vOverzicht, acties: vActies, actie: vActie, 'actie-nieuw': vActieForm, 'actie-edit': vActieForm, deelnemers: vDeelnemers, deelnemer: vDeelnemerForm, backup: vBackup, opbrengsten: vOpbrengsten, opbrengst: vOpbrengstForm, bank: vBank };
-  $('#app').innerHTML = (views[view] || vOverzicht)(id, extra);
+  const views = { overzicht: vOverzicht, acties: vActies, actie: vActie, 'actie-nieuw': vActieForm, 'actie-edit': vActieForm, deelnemers: vDeelnemers, deelnemer: vDeelnemerForm, backup: vBackup, opbrengsten: vOpbrengsten, opbrengst: vOpbrengstForm, bank: vBank, loten: vLoten };
+  // keuzelijsten die de lotdetails op elke pagina gebruiken
+  const lijsten = `<datalist id="varianten">${['Premium', 'Plus', 'PostcodeLot', 'Standaard'].map(x => `<option value="${x}">`).join('')}</datalist>
+    <datalist id="accounts">${[...new Set(S.loten.map(x => x.account).filter(Boolean))].map(x => `<option value="${esc(x)}">`).join('')}</datalist>`;
+  $('#app').innerHTML = (views[view] || vOverzicht)(id, extra) + lijsten;
 }
 
-function lotCard(l, { toonActie = false } = {}) {
+const LKLASSE = { 'VriendenLoterij': 'lk-vl', 'Postcode Loterij': 'lk-pcl', 'BankGiro Loterij': 'lk-bgl', 'Nederlandse Loterij': 'lk-nl' };
+const lkKlasse = loterij => LKLASSE[loterij] || 'lk-other';
+const lkBadge = loterij => `<span class="lkbadge ${lkKlasse(loterij)}">${esc(loterij || 'Onbekend')}</span>`;
+
+// hoofdstatus van een lot: [tekst, kleur]
+function lotStatus(l) {
+  if (l.status === 'te-melden') return ['Nog aanmelden', 'muted'];
+  if (l.status === 'opgezegd') return ['✓ Opgezegd', 'ok'];
+  if (l.houden) return ['Vast lot', 'acc'];
+  if (l.deadline && diffDays(l.deadline) < 0) return ['! Te laat – opzeggen', 'bad'];
+  if (l.deadline && diffDays(l.deadline) <= 7) return ['Binnenkort opzeggen', 'bad'];
+  return ['Nog opzeggen', 'warn'];
+}
+
+function relDagen(iso) {
+  const n = diffDays(iso);
+  return n < 0 ? `${plural(-n, 'dag', 'dagen')} geleden` : n === 0 ? 'vandaag' : n === 1 ? 'morgen' : `over ${n} dagen`;
+}
+
+function lotCard(l, { inActie = false } = {}) {
   const a = act(l.actieId) || {}, d = dn(l.deelnemerId);
-  const late = l.status === 'aangemeld' && l.deadline && diffDays(l.deadline) < 0;
-  let status, knoppen = '';
-  if (l.status === 'te-melden') {
-    status = '<span class="chip">nog aanmelden</span>';
-    knoppen = `<button class="primary" data-act="aangemeld" data-id="${l.id}">Aangemeld ✓</button>`;
-  } else if (l.status === 'aangemeld') {
-    status = l.houden ? '<span class="chip acc">bewust actief</span>' : deadlineChip(l.deadline);
-    knoppen = `<button class="primary" data-act="opgezegd" data-id="${l.id}">Opgezegd ✓</button>`;
-  } else {
-    status = `<span class="chip ok">opgezegd${l.opgezegdOp ? ' ' + fmt(l.opgezegdOp) : ''}</span>`;
-    if (l.opgezegdOp && !l.opzegBevestigd && diffDays(l.opgezegdOp) >= -60) {
-      knoppen = `<label class="cb"><input type="checkbox" data-toggle="opzegBevestigd" data-id="${l.id}"> bevestiging ontvangen</label>`;
-    }
+  const loterij = a.loterij || '';
+  const [stTekst, stKleur] = lotStatus(l);
+  const nu = ditJaarMaand();
+
+  // de belangrijkste feiten: opzeggen, speelperiode, kosten
+  const facts = [];
+  if (l.status === 'aangemeld' && !l.houden) {
+    const n = l.deadline ? diffDays(l.deadline) : null;
+    facts.push(`<div class="fact ${n === null ? '' : n < 0 ? 'bad' : n <= 7 ? 'bad' : 'warn'}"><span>Opzeggen vóór</span><b>${l.deadline ? fmt(l.deadline) : 'onbekend'}</b>${l.deadline ? `<em>${relDagen(l.deadline)}</em>` : ''}</div>`);
+  } else if (l.status === 'opgezegd') {
+    facts.push(`<div class="fact ok"><span>Opgezegd op</span><b>${l.opgezegdOp ? fmt(l.opgezegdOp) : '✓'}</b>${l.opzegBevestigd ? '<em>bevestigd</em>' : ''}</div>`);
+  } else if (l.status === 'te-melden') {
+    facts.push(`<div class="fact"><span>Profiel</span><b>${d ? esc(label(d)) : '–'}</b>${d ? `<em class="mono">${fmtIban(d.iban)}</em>` : ''}</div>`);
   }
-  if (l.onterechtOp && !l.teruggeboekt) {
-    const n = diffDays(addDays(l.onterechtOp, STORNO_DAGEN));
-    status = `<span class="chip ${n < 0 ? '' : 'bad'}">${n < 0 ? 'terugboektermijn verlopen' : `terugboeken vóór ${fmt(addDays(l.onterechtOp, STORNO_DAGEN))}`}</span> ` + status;
-  }
-  // speelperiode: wanneer begint het lot en wat is de laatste maand dat het meespeelt
   if (l.speeltVanaf || l.laatsteSpeelmaand) {
-    const nu = ditJaarMaand();
-    const t = l.speeltVanaf && l.speeltVanaf > nu ? `speelt vanaf ${fmtMaand(l.speeltVanaf)}`
-      : `speelt ${l.speeltVanaf ? fmtMaand(l.speeltVanaf) : '?'} – ${l.laatsteSpeelmaand ? fmtMaand(l.laatsteSpeelmaand) : 'nu'}`;
-    const actief = !l.laatsteSpeelmaand || l.laatsteSpeelmaand >= nu;
-    status += ` <span class="chip ${actief ? 'acc' : ''}">${t}</span>`;
+    const toekomst = l.speeltVanaf && l.speeltVanaf > nu;
+    const voorbij = l.laatsteSpeelmaand && l.laatsteSpeelmaand < nu;
+    facts.push(`<div class="fact"><span>${toekomst ? 'Speelt vanaf' : voorbij ? 'Speelde' : 'Speelt'}</span><b>${toekomst ? fmtMaand(l.speeltVanaf)
+      : `${l.speeltVanaf ? fmtMaand(l.speeltVanaf) : '?'} – ${l.laatsteSpeelmaand ? fmtMaand(l.laatsteSpeelmaand) : 'nu'}`}</b>${l.laatsteSpeelmaand && !voorbij ? '<em>laatste speelmaand</em>' : ''}</div>`);
   }
-  let cadeau = '';
+  if (num(l.prijs)) facts.push(`<div class="fact"><span>Kost</span><b>${eur(num(l.prijs))}</b><em>per trekking${l.variant ? ' · ' + esc(l.variant) : ''}</em></div>`);
+  if (l.onterechtOp && !l.teruggeboekt) {
+    const tot = addDays(l.onterechtOp, STORNO_DAGEN), n = diffDays(tot);
+    facts.push(`<div class="fact ${n < 0 ? '' : 'bad'}"><span>Terugboeken vóór</span><b>${fmt(tot)}</b><em>${n < 0 ? 'termijn verlopen' : relDagen(tot)}${l.onterechtBedrag ? ' · € ' + esc(l.onterechtBedrag) : ''}</em></div>`);
+  }
+
+  const meta = [
+    !inActie && a.id ? `<a href="#/actie/${a.id}">${esc(a.naam)}</a>` : '',
+    l.account ? `👤 ${esc(l.account)}` : '',
+    l.status !== 'te-melden' && d ? esc(label(d)) : '',
+    l.notitie ? `📝 ${esc(l.notitie)}` : '',
+  ].filter(Boolean).map(x => `<span>${x}</span>`).join('');
+
+  let knoppen = '';
+  if (l.status === 'te-melden') knoppen = `<button class="primary" data-act="aangemeld" data-id="${l.id}">Aangemeld ✓</button>`;
+  else if (l.status === 'aangemeld') knoppen = `<button class="${l.houden ? '' : 'primary'}" data-act="opgezegd" data-id="${l.id}">Opgezegd ✓</button>`;
+  else if (l.opgezegdOp && !l.opzegBevestigd && diffDays(l.opgezegdOp) >= -60) {
+    knoppen = `<label class="cb"><input type="checkbox" data-toggle="opzegBevestigd" data-id="${l.id}"> bevestiging ontvangen</label>`;
+  }
   if (a.type === 'cadeau' && l.status !== 'te-melden') {
-    cadeau = `<label class="cb"><input type="checkbox" data-toggle="inlegBetaald" data-id="${l.id}" ${l.inlegBetaald ? 'checked' : ''}> inleg afgeschreven</label>
+    knoppen += `<label class="cb"><input type="checkbox" data-toggle="inlegBetaald" data-id="${l.id}" ${l.inlegBetaald ? 'checked' : ''}> inleg afgeschreven</label>
       <label class="cb"><input type="checkbox" data-toggle="cadeauOntvangen" data-id="${l.id}" ${l.cadeauOntvangen ? 'checked' : ''}> cadeau ontvangen</label>`;
   }
-  if (l.account) status = `<span class="chip" title="Account waarmee je inlogt bij de loterij">👤 ${esc(l.account)}</span> ` + status;
-  const geenDn = `<i>${l.deelnemerId ? 'verwijderde deelnemer' : 'nog niet gekoppeld'}</i>`;
-  const lotInfo = [l.kenmerk, l.variant, num(l.prijs) ? `${eur(num(l.prijs))}/trekking` : ''].filter(Boolean).map(esc).join(' · ');
-  const titel = toonActie
-    ? `<a href="#/actie/${a.id}"><b>${esc(a.loterij)}</b> – ${esc(a.naam)}</a><div class="small muted">${d ? esc(label(d)) + ' · <span class="mono">' + fmtIban(d.iban) + '</span>' : geenDn}${lotInfo ? ' · ' + lotInfo : ''}</div>`
-    : `<b>${d ? esc(label(d)) : geenDn}</b><div class="small muted mono">${d ? fmtIban(d.iban) : ''}${lotInfo ? (d ? ' · ' : '') + lotInfo : ''}</div>`;
 
-  const kopie = d ? copyFields(d).map(([k, v]) =>
-    `<button class="cp" data-act="copy" data-v="${esc(v)}" title="Klik om te kopiëren"><span>${k}</span><b>${esc(v) || '–'}</b></button>`).join('') : '';
+  const kopie = d && l.status === 'te-melden' ? `<div class="copygrid">${copyFields(d).map(([k, v]) =>
+    `<button class="cp" data-act="copy" data-v="${esc(v)}" title="Klik om te kopiëren"><span>${k}</span><b>${esc(v) || '–'}</b></button>`).join('')}</div>` : '';
 
-  return `<div class="card lot s-${l.status}${late ? ' late' : ''}">
-    <div class="row"><div class="grow">${titel}</div>${status}${cadeau}${knoppen}</div>
-    ${toonActie ? '' : `<details data-lot="${l.id}" ${openLots.has(l.id) ? 'open' : ''}>
-      <summary>Gegevens kopiëren &amp; details</summary>
-      <div class="copygrid">${kopie}</div>
+  return `<div class="card lot ${lkKlasse(loterij)} st-${stKleur}">
+    <div class="lot-top">
+      <div>${lkBadge(loterij)}<div class="lot-nr">${esc(l.kenmerk) || (d ? esc(label(d)) : 'Nieuw lot')}</div></div>
+      <span class="pill ${stKleur}">${stTekst}</span>
+    </div>
+    ${facts.length ? `<div class="facts">${facts.join('')}</div>` : ''}
+    ${meta ? `<div class="lot-meta">${meta}</div>` : ''}
+    ${knoppen ? `<div class="lot-actions">${knoppen}</div>` : ''}
+    ${l.status === 'te-melden' ? kopie : ''}
+    <details data-lot="${l.id}" ${openLots.has(l.id) ? 'open' : ''}>
+      <summary>${l.status === 'te-melden' ? 'Details' : 'Details & bewerken'}</summary>
       <div class="edit">
-        <label>Aangemeld op<input type="date" data-lotfield="aangemeldOp" data-id="${l.id}" value="${l.aangemeldOp || ''}"></label>
+        <label>Lotnummer<input data-lotfield="kenmerk" data-id="${l.id}" value="${esc(l.kenmerk)}"></label>
         <label>Opzeggen vóór<input type="date" data-lotfield="deadline" data-id="${l.id}" value="${l.deadline || ''}"></label>
         <label>Opgezegd op<input type="date" data-lotfield="opgezegdOp" data-id="${l.id}" value="${l.opgezegdOp || ''}"></label>
         <label>Speelt mee vanaf<input type="month" data-lotfield="speeltVanaf" data-id="${l.id}" value="${l.speeltVanaf || ''}"></label>
         <label>Laatste speelmaand<input type="month" data-lotfield="laatsteSpeelmaand" data-id="${l.id}" value="${l.laatsteSpeelmaand || ''}"></label>
-        <label>Lot-/klantnummer<input data-lotfield="kenmerk" data-id="${l.id}" value="${esc(l.kenmerk)}"></label>
+        <label>Aangemeld op<input type="date" data-lotfield="aangemeldOp" data-id="${l.id}" value="${l.aangemeldOp || ''}"></label>
         <label>Account (inlog bij loterij)<input list="accounts" data-lotfield="account" data-id="${l.id}" value="${esc(l.account)}"></label>
         <label>Profiel<select data-lotfield="deelnemerId" data-id="${l.id}"><option value="">– nog niet gekoppeld –</option>${S.deelnemers.map(x => `<option value="${x.id}" ${x.id === l.deelnemerId ? 'selected' : ''}>${esc(label(x))}</option>`).join('')}</select></label>
         <label>Actie<select data-lotfield="actieId" data-id="${l.id}">${S.acties.map(x => `<option value="${x.id}" ${x.id === l.actieId ? 'selected' : ''}>${esc(x.loterij)} – ${esc(x.naam)}</option>`).join('')}</select></label>
         <label>Soort lot<input list="varianten" data-lotfield="variant" data-id="${l.id}" value="${esc(l.variant)}" placeholder="bijv. Premium"></label>
         <label>Prijs per trekking (€)<input inputmode="decimal" data-lotfield="prijs" data-id="${l.id}" value="${esc(l.prijs)}"></label>
-        <label class="cb" style="align-self:end"><input type="checkbox" data-toggle="houden" data-id="${l.id}" ${l.houden ? 'checked' : ''}> bewust houden (niet opzeggen)</label>
+        <label class="cb" style="align-self:end"><input type="checkbox" data-toggle="houden" data-id="${l.id}" ${l.houden ? 'checked' : ''}> vast lot (niet opzeggen)</label>
         <label>Opgezegd via<select data-lotfield="opzegWijze" data-id="${l.id}">${OPZEGWIJZEN.map(x => `<option ${x === (l.opzegWijze || '') ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
         <label>Referentie opzegging<input data-lotfield="opzegReferentie" data-id="${l.id}" value="${esc(l.opzegReferentie)}" placeholder="bijv. zaaknummer"></label>
-        <label class="cb" style="align-self:end"><input type="checkbox" data-toggle="opzegBevestigd" data-id="${l.id}" ${l.opzegBevestigd ? 'checked' : ''}> bevestiging opzegging ontvangen</label>
+        <label class="cb" style="align-self:end"><input type="checkbox" data-toggle="opzegBevestigd" data-id="${l.id}" ${l.opzegBevestigd ? 'checked' : ''}> bevestiging ontvangen</label>
         <label>Toch afgeschreven op<input type="date" data-lotfield="onterechtOp" data-id="${l.id}" value="${l.onterechtOp || ''}"></label>
         <label>Afgeschreven bedrag (€)<input inputmode="decimal" data-lotfield="onterechtBedrag" data-id="${l.id}" value="${esc(l.onterechtBedrag)}"></label>
         <label class="cb" style="align-self:end"><input type="checkbox" data-toggle="teruggeboekt" data-id="${l.id}" ${l.teruggeboekt ? 'checked' : ''}> teruggeboekt</label>
         <label style="grid-column:1/-1">Notitie<input data-lotfield="notitie" data-id="${l.id}" value="${esc(l.notitie)}"></label>
       </div>
       <div class="actions">
-        ${l.status === 'opgezegd' ? `<button data-act="heropen" data-id="${l.id}">Terug naar ‘aangemeld’</button>` : ''}
+        ${l.status === 'opgezegd' ? `<button data-act="heropen" data-id="${l.id}">Toch niet opgezegd</button>` : ''}
         ${l.status === 'aangemeld' ? `<button data-act="reset" data-id="${l.id}">Terug naar ‘nog aanmelden’</button>` : ''}
         <button class="danger" data-act="lot-del" data-id="${l.id}">Lot verwijderen</button>
       </div>
-    </details>`}
+    </details>
   </div>`;
+}
+
+const lotGrid = lijst => `<div class="lotgrid">${lijst.map(l => lotCard(l)).join('')}</div>`;
+
+// volgorde: eerst wat aandacht nodig heeft
+function lotPrioriteit(l) {
+  if (l.status === 'aangemeld' && !l.houden) return 0;
+  if (l.status === 'te-melden') return 1;
+  if (l.status === 'aangemeld') return 2;
+  return 3;
+}
+const lotSort = (x, y) => lotPrioriteit(x) - lotPrioriteit(y)
+  || (x.deadline || '9999').localeCompare(y.deadline || '9999')
+  || (y.laatsteSpeelmaand || '').localeCompare(x.laatsteSpeelmaand || '')
+  || (x.kenmerk || '').localeCompare(y.kenmerk || '');
+
+const LOTFILTERS = { alle: 'Alle', open: 'Nog opzeggen', vast: 'Vaste loten', aanmelden: 'Nog aanmelden', opgezegd: 'Opgezegd' };
+function vLoten(filter = 'open', loterij = 'alle') {
+  loterij = decodeURIComponent(loterij);
+  const past = l => filter === 'alle' || (filter === 'open' && l.status === 'aangemeld' && !l.houden) || (filter === 'vast' && l.status === 'aangemeld' && l.houden)
+    || (filter === 'aanmelden' && l.status === 'te-melden') || (filter === 'opgezegd' && l.status === 'opgezegd');
+  const loterijen = [...new Set(S.loten.map(lotLoterij))].filter(Boolean).sort();
+  const lijst = S.loten.filter(past).filter(l => loterij === 'alle' || lotLoterij(l) === loterij).sort(lotSort);
+  const tel = f => S.loten.filter(l => { const o = filter; filter = f; const r = past(l); filter = o; return r; }).length;
+
+  let h = `<h2>Loten</h2>
+  <div class="filters">${Object.entries(LOTFILTERS).map(([k, t]) => `<a href="#/loten/${k}/${encodeURIComponent(loterij)}" class="${k === filter ? 'on' : ''}">${t} (${tel(k)})</a>`).join('')}</div>
+  <div class="filters">${['alle', ...loterijen].map(x => `<a href="#/loten/${filter}/${encodeURIComponent(x)}" class="${x === loterij ? 'on' : ''}">${x === 'alle' ? 'Alle loterijen' : esc(x)}</a>`).join('')}</div>`;
+  if (!lijst.length) return h + '<div class="empty">Geen loten in deze selectie.</div>';
+  const groepen = {};
+  lijst.forEach(l => (groepen[lotLoterij(l) || 'Onbekend'] ||= []).push(l));
+  for (const [lt, ls] of Object.entries(groepen)) {
+    h += `<div class="groupkop">${lkBadge(lt)}<span class="muted small">${plural(ls.length, 'lot', 'loten')}</span></div>` + lotGrid(ls);
+  }
+  return h;
 }
 
 function copyFields(d) {
@@ -427,7 +542,7 @@ function vOverzicht() {
   todo.forEach(l => { perActie[l.actieId] = (perActie[l.actieId] || 0) + 1; });
 
   let h = '';
-  if (!S.deelnemers.length) {
+  if (!S.deelnemers.length && !S.loten.length) {
     h += `<div class="notice info">Welkom! Begin met het toevoegen van je <a href="#/deelnemer/nieuw">deelnemers</a> (naam + IBAN). Daarna maak je per actie een <a href="#/actie-nieuw">nieuwe actie</a> aan; de loten worden dan automatisch voor iedereen klaargezet.</div>`;
   }
   const lb = S.meta.lastBackup;
@@ -452,16 +567,16 @@ function vOverzicht() {
 
   if (terugboeken.length) {
     h += `<h3>Terugboeken bij je bank</h3><p class="small muted">Na opzegging toch afgeschreven. Een incasso kun je tot ${STORNO_DAGEN} dagen na afschrijving via je bank-app terugboeken.</p>`
-      + terugboeken.map(l => lotCard(l, { toonActie: true })).join('');
+      + lotGrid(terugboeken);
   }
 
-  h += '<h3>Op te zeggen</h3>';
-  h += open.length ? open.map(l => lotCard(l, { toonActie: true })).join('') : '<div class="empty">Niets op te zeggen. 🎉</div>';
+  h += `<h3>Op te zeggen <a class="small" style="text-transform:none;letter-spacing:0;font-weight:500;margin-left:8px" href="#/loten/open/alle">alle loten →</a></h3>`;
+  h += open.length ? lotGrid(open) : '<div class="empty">Niets op te zeggen. 🎉</div>';
   if (onbevestigd.length) {
-    h += '<h3>Opzegging nog niet bevestigd</h3>' + onbevestigd.map(l => lotCard(l, { toonActie: true })).join('');
+    h += '<h3>Opzegging nog niet bevestigd</h3>' + lotGrid(onbevestigd);
   }
   if (gehouden.length) {
-    h += `<details class="card"><summary>Bewust actief gehouden (${gehouden.length})</summary>${gehouden.map(l => lotCard(l, { toonActie: true })).join('')}</details>`;
+    h += `<h3>Vaste loten</h3>` + lotGrid(gehouden);
   }
 
   if (Object.keys(perActie).length) {
@@ -473,7 +588,7 @@ function vOverzicht() {
   }
   if (cadeaus.length) {
     h += '<h3>Cadeau nog niet ontvangen</h3>';
-    h += cadeaus.map(l => lotCard(l, { toonActie: true })).join('');
+    h += lotGrid(cadeaus);
   }
   return h;
 }
@@ -487,11 +602,12 @@ function vActies() {
     const c = s => ls.filter(l => l.status === s).length;
     const pct = ls.length ? Math.round(c('opgezegd') / ls.length * 100) : 0;
     const opb = S.opbrengsten.filter(o => o.actieId === a.id).reduce((s, o) => s + opbNetto(o), 0) - inlegKosten(ls);
-    return `<div class="card"><div class="row">
-      <div class="grow"><a href="#/actie/${a.id}"><b>${esc(a.loterij)}</b> – ${esc(a.naam)}</a>
-        <div class="small muted">${a.type === 'cadeau' ? '🎁 Cadeau na 1× inleg' + (a.cadeau ? ': ' + esc(a.cadeau) : '') : '🆓 Gratis meespelen'} · gestart ${fmt(a.startdatum)}</div></div>
+    const open = ls.filter(l => l.status === 'aangemeld' && !l.houden).length;
+    return `<div class="card lot ${lkKlasse(a.loterij)}"><div class="row">
+      <div class="grow">${lkBadge(a.loterij)}<div><a href="#/actie/${a.id}" style="color:inherit;text-decoration:none"><b>${esc(a.naam)}</b></a></div>
+        <div class="small muted">${a.type === 'cadeau' ? '🎁 Cadeau na 1× inleg' + (a.cadeau ? ': ' + esc(a.cadeau) : '') : '🆓 Gratis meespelen'}${a.startdatum ? ' · gestart ' + fmt(a.startdatum) : ''}</div></div>
       ${eindChip(a)}
-      <span class="chip">${c('te-melden')} aanmelden</span><span class="chip warn">${c('aangemeld')} opzeggen</span><span class="chip ok">${c('opgezegd')} opgezegd</span>
+      ${c('te-melden') ? `<span class="chip">${c('te-melden')} aanmelden</span>` : ''}${open ? `<span class="chip warn">${open} nog opzeggen</span>` : ''}<span class="chip ok">${c('opgezegd')}/${ls.length} opgezegd</span>
       ${opb ? `<span class="chip ${opb > 0 ? 'acc' : 'bad'}">${eur(opb)}</span>` : ''}
     </div><div class="bar"><i style="width:${pct}%"></i></div></div>`;
   }).join('');
@@ -545,8 +661,8 @@ function vActie(id) {
   ls.sort((x, y) => volgorde[x.status] - volgorde[y.status] || label(dn(x.deelnemerId) || {}).localeCompare(label(dn(y.deelnemerId) || {})));
   const nietIn = S.deelnemers.filter(d => !ls.some(l => l.deelnemerId === d.id));
 
-  let h = `<div class="card">
-    <div class="row"><h2 class="grow" style="margin:0">${esc(a.loterij)} – ${esc(a.naam)}</h2>
+  let h = `<div class="card lot ${lkKlasse(a.loterij)}">
+    <div class="row"><div class="grow">${lkBadge(a.loterij)}<h2 style="margin:2px 0 0">${esc(a.naam)}</h2></div>
       <a class="btn" href="#/opbrengst/nieuw/${a.id}">+ Prijs / opbrengst</a><a class="btn" href="#/actie-edit/${a.id}">Bewerken</a><button class="danger" data-act="actie-del" data-id="${a.id}">Verwijderen</button></div>
     <div class="small muted" style="margin-top:6px">
       ${a.type === 'cadeau' ? `🎁 Cadeau na 1× inleg${a.cadeau ? ': <b>' + esc(a.cadeau) + '</b>' : ''}${a.waarde ? ` (waarde €${esc(a.waarde)})` : ''}${a.inleg ? ` · inleg €${esc(a.inleg)}` : ''} · opzeggen nadat de eerste inleg is afgeschreven`
@@ -562,11 +678,11 @@ function vActie(id) {
   </div>`;
   h += ibanWaarschuwing(id);
   h += wachttijdKaart(a);
-  h += `<datalist id="varianten">${['Premium', 'Plus', 'PostcodeLot', 'Standaard'].map(x => `<option value="${x}">`).join('')}</datalist>`;
-  h += `<datalist id="accounts">${[...new Set(S.loten.map(x => x.account).filter(Boolean))].map(x => `<option value="${esc(x)}">`).join('')}</datalist>`;
+  h += `<h3>Loten (${ls.length})</h3>`;
+  h += ls.length ? `<div class="lotgrid">${ls.sort(lotSort).map(l => lotCard(l, { inActie: true })).join('')}</div>` : '<div class="empty">Geen loten in deze actie.</div>';
   const opbs = S.opbrengsten.filter(o => o.actieId === id);
-  if (opbs.length) h += `<h3>Opbrengsten (${eur(opbs.reduce((s, o) => s + opbNetto(o), 0) - inlegKosten(ls))} netto)</h3>` + opbs.map(opbCard).join('') + '<h3>Loten</h3>';
-  h += ls.length ? ls.map(l => lotCard(l)).join('') : '<div class="empty">Geen loten in deze actie.</div>';
+  if (opbs.length) h += `<details class="card" style="margin-top:14px"><summary>Opbrengsten van deze actie: ${plural(opbs.length, 'item', 'items')}, ${eur(opbs.reduce((s, o) => s + opbNetto(o), 0) - inlegKosten(ls))} netto</summary>
+    <div style="margin-top:10px">${opbs.map(opbCard).join('')}</div></details>`;
   if (nietIn.length) {
     h += `<details class="card"><summary>Deelnemers toevoegen aan deze actie (${nietIn.length})</summary>
       <div id="add-dn" style="margin-top:8px">${dnCheckboxes(nietIn, false)}</div>
