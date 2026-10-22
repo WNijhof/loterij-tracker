@@ -1,0 +1,16 @@
+services:
+  loterij-tracker:
+    build: .
+    image: loterij-tracker:latest
+    container_name: loterij-tracker
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      # alleen bereikbaar vanaf de server zelf; zet er een reverse proxy met HTTPS voor
+      # of verander in "8080:8080" om hem op je thuisnetwerk te openen
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - tracker-data:/data
+
+volumes:
+  tracker-data:

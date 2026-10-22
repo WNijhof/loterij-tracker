@@ -1,0 +1,766 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Loterij Tracker</title>
+<style>
+:root{--bg:#f5f6f8;--card:#fff;--text:#1d2330;--muted:#667085;--border:#e2e5eb;--accent:#2563eb;--accent-soft:#e8efff;--bad:#c4320a;--bad-soft:#fdecea;--warn:#b54708;--warn-soft:#fef4e6;--ok:#067647;--ok-soft:#e6f6ee}
+@media (prefers-color-scheme:dark){:root{--bg:#12151b;--card:#1b1f27;--text:#e6e8ec;--muted:#98a2b3;--border:#2c323d;--accent:#6c9cff;--accent-soft:#1e2a44;--bad:#ff8a70;--bad-soft:#3a1f1a;--warn:#fdb022;--warn-soft:#3a2c14;--ok:#47cd89;--ok-soft:#14301f}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:5}
+.wrap{max-width:1000px;margin:0 auto;padding:0 16px}
+header .wrap{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding-top:10px;padding-bottom:10px}
+header h1{font-size:17px;margin:0;margin-right:auto}
+nav{display:flex;gap:4px;flex-wrap:wrap}
+nav a{color:var(--muted);text-decoration:none;padding:6px 10px;border-radius:8px;font-weight:500}
+nav a.on{background:var(--accent-soft);color:var(--accent)}
+nav .badge{background:var(--bad);color:#fff;border-radius:10px;padding:0 6px;font-size:12px;margin-left:4px}
+main{padding:20px 0 60px}
+h2{font-size:20px;margin:0 0 12px}
+h3{font-size:15px;margin:22px 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:8px}
+.tile{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.tile b{display:block;font-size:26px;line-height:1.1}
+.tile span{color:var(--muted);font-size:13px}
+.tile.bad b{color:var(--bad)}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.row .grow{flex:1;min-width:180px}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.chip{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12.5px;font-weight:500;background:var(--bg);border:1px solid var(--border);white-space:nowrap}
+.chip.bad{background:var(--bad-soft);color:var(--bad);border-color:transparent}
+.chip.warn{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+.chip.ok{background:var(--ok-soft);color:var(--ok);border-color:transparent}
+.chip.acc{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+button,.btn{font:inherit;font-size:14px;padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);cursor:pointer;text-decoration:none;display:inline-block}
+button:hover,.btn:hover{border-color:var(--accent)}
+button.primary,.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button.danger{color:var(--bad)}
+button.link{border:0;background:none;color:var(--muted);padding:4px 6px}
+label.cb{display:inline-flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;white-space:nowrap}
+form .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px 14px}
+form label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+input,select,textarea{font:inherit;font-size:15px;padding:7px 9px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);width:100%}
+input[type=checkbox]{width:auto}
+textarea{min-height:60px}
+.actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+details>summary{cursor:pointer;color:var(--accent);font-size:13.5px;margin-top:6px;list-style:none}
+details>summary::-webkit-details-marker{display:none}
+details>summary::before{content:"▸ "}
+details[open]>summary::before{content:"▾ "}
+.copygrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:6px;margin-top:8px}
+.cp{text-align:left;display:flex;flex-direction:column;padding:6px 10px;min-width:0}
+.cp span{font-size:11.5px;color:var(--muted)}
+.cp b{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cp.done{border-color:var(--ok);background:var(--ok-soft)}
+.edit{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:10px}
+.edit label{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:3px}
+.lot{border-left:4px solid var(--border)}
+.lot.s-te-melden{border-left-color:var(--muted)}
+.lot.s-aangemeld{border-left-color:var(--warn)}
+.lot.s-aangemeld.late{border-left-color:var(--bad)}
+.lot.s-opgezegd{border-left-color:var(--ok);opacity:.85}
+.bar{height:6px;background:var(--bg);border-radius:4px;overflow:hidden;margin-top:8px}
+.bar i{display:block;height:100%;background:var(--ok)}
+.notice{padding:10px 14px;border-radius:10px;margin-bottom:12px;font-size:14px}
+.notice.warn{background:var(--warn-soft);color:var(--warn)}
+.notice.bad{background:var(--bad-soft);color:var(--bad)}
+.notice.info{background:var(--accent-soft);color:var(--accent)}
+.empty{color:var(--muted);padding:12px 0}
+a{color:var(--accent)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td,th{text-align:left;padding:7px 6px;border-bottom:1px solid var(--border)}
+th{color:var(--muted);font-weight:500;font-size:12.5px}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:8px 16px;border-radius:999px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none}
+#toast.show{opacity:1}
+.mono{font-family:ui-monospace,Consolas,monospace;font-size:13.5px}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <h1>🎟️ Loterij Tracker</h1>
+  <nav id="nav"></nav>
+</div></header>
+<main><div class="wrap" id="app"></div></main>
+<div id="toast"></div>
+
+<script>
+const KEY = 'loterijtracker.v1';
+const LOTERIJEN = ['VriendenLoterij', 'Postcode Loterij', 'BankGiro Loterij', 'Anders'];
+const DEFAULT_DAGEN = { gratis: 1, cadeau: 35 };
+const DFIELDS = [
+  ['label', 'Label (bijv. "Jan – ING")'],
+  ['aanhef', 'Aanhef', 'select', ['', 'Dhr.', 'Mevr.', 'Anders']],
+  ['voornaam', 'Voornaam'], ['voorletters', 'Voorletters'], ['tussenvoegsel', 'Tussenvoegsel'], ['achternaam', 'Achternaam'],
+  ['geboortedatum', 'Geboortedatum', 'date'],
+  ['postcode', 'Postcode'], ['huisnummer', 'Huisnummer'], ['toevoeging', 'Toevoeging'], ['straat', 'Straat'], ['plaats', 'Plaats'],
+  ['email', 'E-mail', 'email'], ['telefoon', 'Telefoon', 'tel'],
+  ['iban', 'IBAN'], ['tenaamstelling', 'Tenaamstelling rekening'],
+];
+
+// ---------- opslag ----------
+function load() {
+  try { const r = localStorage.getItem(KEY); if (r) return JSON.parse(r); } catch (e) {}
+  return { deelnemers: [], acties: [], loten: [], meta: {} };
+}
+function normalize(d) {
+  d.meta = d.meta || {};
+  d.opbrengsten = d.opbrengsten || [];
+  return d;
+}
+// serverVersion === null: lokale modus (bestand geopend zonder server), gegevens in localStorage
+let serverVersion = null, dirty = false;
+function save() {
+  if (serverVersion === null) {
+    try { localStorage.setItem(KEY, JSON.stringify(S)); }
+    catch (e) { alert('Opslaan in de browser is mislukt. Maak direct een backup via het tabblad Backup.'); }
+    return;
+  }
+  dirty = true;
+  clearTimeout(save.t); save.t = setTimeout(push, 300);
+}
+async function push() {
+  try {
+    const r = await fetch('api/data', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ version: serverVersion, data: S }) });
+    if (r.status === 409) {
+      const j = await r.json();
+      serverVersion = j.version; S = normalize(j.data); dirty = false; render();
+      toast('Gegevens waren elders gewijzigd en zijn opnieuw geladen – controleer je laatste wijziging');
+      return;
+    }
+    if (!r.ok) throw new Error(r.status);
+    serverVersion = (await r.json()).version; dirty = false;
+  } catch (e) { toast('Opslaan op de server mislukt – probeer het opnieuw'); }
+}
+// wijzigingen van andere apparaten/tabbladen ophalen, maar niet terwijl je aan het typen bent
+async function sync() {
+  if (dirty || /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName)) return;
+  try {
+    const r = await fetch('api/data', { cache: 'no-store' });
+    if (!r.ok) return;
+    const j = await r.json();
+    if (j.version !== serverVersion && !dirty) { serverVersion = j.version; S = normalize(j.data); render(); }
+  } catch (e) {}
+}
+async function init() {
+  if (location.protocol.startsWith('http')) {
+    try {
+      const r = await fetch('api/data', { cache: 'no-store' });
+      if (r.ok) { const j = await r.json(); serverVersion = j.version; S = normalize(j.data); }
+    } catch (e) {}
+  }
+  render();
+  if (serverVersion !== null) {
+    setInterval(sync, 15000);
+    window.addEventListener('focus', sync);
+  }
+}
+let S = normalize(load());
+const openLots = new Set();
+const SOORTEN = { prijs: 'Prijs gewonnen', geld: 'Geldprijs', cadeau: 'Welkomstcadeau', anders: 'Anders' };
+const OSTATUS = { bewaard: 'In bezit', 'te-koop': 'Te koop', verkocht: 'Verkocht', gebruikt: 'Zelf gebruikt / geld ontvangen' };
+
+// ---------- helpers ----------
+const $ = s => document.querySelector(s);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const pad = n => String(n).padStart(2, '0');
+const isoOf = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const today = () => isoOf(new Date());
+function parseIso(iso) { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d); }
+function addDays(iso, n) { const d = parseIso(iso); d.setDate(d.getDate() + Number(n || 0)); return isoOf(d); }
+function diffDays(iso) { const t = new Date(); t.setHours(0, 0, 0, 0); return Math.round((parseIso(iso) - t) / 864e5); }
+function fmt(iso) { if (!iso) return '–'; const [y, m, d] = iso.split('-'); return `${d}-${m}-${y}`; }
+const normIban = s => String(s || '').replace(/\s+/g, '').toUpperCase();
+const fmtIban = s => normIban(s).replace(/(.{4})/g, '$1 ').trim();
+function ibanOk(s) {
+  s = normIban(s);
+  if (!/^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/.test(s)) return false;
+  let m = 0;
+  for (const ch of s.slice(4) + s.slice(0, 4)) m = Number(String(m) + (/[A-Z]/.test(ch) ? ch.charCodeAt(0) - 55 : ch)) % 97;
+  return m === 1;
+}
+const dn = id => S.deelnemers.find(d => d.id === id);
+const act = id => S.acties.find(a => a.id === id);
+const lot = id => S.loten.find(l => l.id === id);
+const naamVol = d => [d.voornaam, d.tussenvoegsel, d.achternaam].filter(Boolean).join(' ');
+const label = d => d.label || naamVol(d) || '(naamloos)';
+const plural = (n, a, b) => `${n} ${n === 1 ? a : b}`;
+function num(v) {
+  const s = String(v ?? '').replace(/[€\s]/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.');
+  const n = parseFloat(s); return isNaN(n) ? 0 : n;
+}
+const eur = n => n.toLocaleString('nl-NL', { style: 'currency', currency: 'EUR' });
+const opbLoterij = o => act(o.actieId)?.loterij || o.loterij || 'Onbekend';
+// opbrengst van één item: verkoopprijs als het verkocht is, anders de geschatte waarde, min eventuele kosten
+const opbBruto = o => o.status === 'verkocht' ? num(o.verkochtVoor) : num(o.waarde);
+const opbNetto = o => opbBruto(o) - num(o.kosten);
+const inlegKosten = loten => loten.filter(l => l.inlegBetaald).reduce((s, l) => s + num(act(l.actieId)?.inleg), 0);
+
+function toast(t) {
+  const el = $('#toast'); el.textContent = t; el.classList.add('show');
+  clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('show'), 1600);
+}
+async function copyText(t) {
+  try { await navigator.clipboard.writeText(t); return true; } catch (e) {}
+  const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select();
+  const ok = document.execCommand('copy'); ta.remove(); return ok;
+}
+function download(name, content, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type }));
+  a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+function deadlineChip(iso) {
+  if (!iso) return '<span class="chip">geen opzegdatum</span>';
+  const n = diffDays(iso);
+  let cls = 'chip', t;
+  if (n < 0) { cls += ' bad'; t = `${plural(-n, 'dag', 'dagen')} te laat`; }
+  else if (n === 0) { cls += ' warn'; t = 'vandaag opzeggen'; }
+  else if (n <= 3) { cls += ' warn'; t = `over ${plural(n, 'dag', 'dagen')}`; }
+  else t = `over ${n} dagen`;
+  return `<span class="${cls}">${t} · ${fmt(iso)}</span>`;
+}
+
+// ---------- weergaven ----------
+function route() { return (location.hash.slice(2) || 'overzicht').split('/'); }
+
+function render() {
+  const [view, id, extra] = route();
+  const urgent = S.loten.filter(l => l.status === 'aangemeld' && l.deadline && diffDays(l.deadline) <= 0).length;
+  const tabs = [['overzicht', 'Overzicht'], ['acties', 'Acties'], ['opbrengsten', 'Opbrengsten'], ['deelnemers', 'Deelnemers'], ['backup', 'Backup']];
+  const cur = { actie: 'acties', 'actie-nieuw': 'acties', 'actie-edit': 'acties', deelnemer: 'deelnemers', opbrengst: 'opbrengsten' }[view] || view;
+  $('#nav').innerHTML = tabs.map(([k, t]) =>
+    `<a href="#/${k}" class="${cur === k ? 'on' : ''}">${t}${k === 'overzicht' && urgent ? `<span class="badge">${urgent}</span>` : ''}</a>`).join('');
+  const views = { overzicht: vOverzicht, acties: vActies, actie: vActie, 'actie-nieuw': vActieForm, 'actie-edit': vActieForm, deelnemers: vDeelnemers, deelnemer: vDeelnemerForm, backup: vBackup, opbrengsten: vOpbrengsten, opbrengst: vOpbrengstForm };
+  $('#app').innerHTML = (views[view] || vOverzicht)(id, extra);
+}
+
+function lotCard(l, { toonActie = false } = {}) {
+  const a = act(l.actieId) || {}, d = dn(l.deelnemerId);
+  const late = l.status === 'aangemeld' && l.deadline && diffDays(l.deadline) < 0;
+  let status, knoppen = '';
+  if (l.status === 'te-melden') {
+    status = '<span class="chip">nog aanmelden</span>';
+    knoppen = `<button class="primary" data-act="aangemeld" data-id="${l.id}">Aangemeld ✓</button>`;
+  } else if (l.status === 'aangemeld') {
+    status = deadlineChip(l.deadline);
+    knoppen = `<button class="primary" data-act="opgezegd" data-id="${l.id}">Opgezegd ✓</button>`;
+  } else {
+    status = `<span class="chip ok">opgezegd ${fmt(l.opgezegdOp)}</span>`;
+  }
+  let cadeau = '';
+  if (a.type === 'cadeau' && l.status !== 'te-melden') {
+    cadeau = `<label class="cb"><input type="checkbox" data-toggle="inlegBetaald" data-id="${l.id}" ${l.inlegBetaald ? 'checked' : ''}> inleg afgeschreven</label>
+      <label class="cb"><input type="checkbox" data-toggle="cadeauOntvangen" data-id="${l.id}" ${l.cadeauOntvangen ? 'checked' : ''}> cadeau ontvangen</label>`;
+  }
+  const titel = toonActie
+    ? `<a href="#/actie/${a.id}"><b>${esc(a.loterij)}</b> – ${esc(a.naam)}</a><div class="small muted">${d ? esc(label(d)) + ' · <span class="mono">' + fmtIban(d.iban) + '</span>' : '<i>verwijderde deelnemer</i>'}${l.kenmerk ? ' · ' + esc(l.kenmerk) : ''}</div>`
+    : `<b>${d ? esc(label(d)) : '<i>verwijderde deelnemer</i>'}</b><div class="small muted mono">${d ? fmtIban(d.iban) : ''}${l.kenmerk ? ' · ' + esc(l.kenmerk) : ''}</div>`;
+
+  const kopie = d ? copyFields(d).map(([k, v]) =>
+    `<button class="cp" data-act="copy" data-v="${esc(v)}" title="Klik om te kopiëren"><span>${k}</span><b>${esc(v) || '–'}</b></button>`).join('') : '';
+
+  return `<div class="card lot s-${l.status}${late ? ' late' : ''}">
+    <div class="row"><div class="grow">${titel}</div>${status}${cadeau}${knoppen}</div>
+    ${toonActie ? '' : `<details data-lot="${l.id}" ${openLots.has(l.id) ? 'open' : ''}>
+      <summary>Gegevens kopiëren &amp; details</summary>
+      <div class="copygrid">${kopie}</div>
+      <div class="edit">
+        <label>Aangemeld op<input type="date" data-lotfield="aangemeldOp" data-id="${l.id}" value="${l.aangemeldOp || ''}"></label>
+        <label>Opzeggen vóór<input type="date" data-lotfield="deadline" data-id="${l.id}" value="${l.deadline || ''}"></label>
+        <label>Opgezegd op<input type="date" data-lotfield="opgezegdOp" data-id="${l.id}" value="${l.opgezegdOp || ''}"></label>
+        <label>Lot-/klantnummer<input data-lotfield="kenmerk" data-id="${l.id}" value="${esc(l.kenmerk)}"></label>
+        <label style="grid-column:1/-1">Notitie<input data-lotfield="notitie" data-id="${l.id}" value="${esc(l.notitie)}"></label>
+      </div>
+      <div class="actions">
+        ${l.status === 'opgezegd' ? `<button data-act="heropen" data-id="${l.id}">Terug naar ‘aangemeld’</button>` : ''}
+        ${l.status === 'aangemeld' ? `<button data-act="reset" data-id="${l.id}">Terug naar ‘nog aanmelden’</button>` : ''}
+        <button class="danger" data-act="lot-del" data-id="${l.id}">Lot verwijderen</button>
+      </div>
+    </details>`}
+  </div>`;
+}
+
+function copyFields(d) {
+  return [
+    ['Aanhef', d.aanhef], ['Voornaam', d.voornaam], ['Voorletters', d.voorletters], ['Tussenvoegsel', d.tussenvoegsel],
+    ['Achternaam', d.achternaam], ['Geboortedatum', d.geboortedatum ? fmt(d.geboortedatum) : ''],
+    ['Postcode', d.postcode], ['Huisnummer', d.huisnummer], ['Toevoeging', d.toevoeging], ['Straat', d.straat], ['Plaats', d.plaats],
+    ['E-mail', d.email], ['Telefoon', d.telefoon], ['IBAN', normIban(d.iban)], ['Tenaamstelling', d.tenaamstelling],
+  ].filter(([, v]) => v);
+}
+
+function vOverzicht() {
+  const open = S.loten.filter(l => l.status === 'aangemeld')
+    .sort((a, b) => (a.deadline || '9999').localeCompare(b.deadline || '9999'));
+  const late = open.filter(l => l.deadline && diffDays(l.deadline) < 0).length;
+  const todo = S.loten.filter(l => l.status === 'te-melden');
+  const cadeaus = S.loten.filter(l => act(l.actieId)?.type === 'cadeau' && l.status !== 'te-melden' && !l.cadeauOntvangen);
+
+  const perActie = {};
+  todo.forEach(l => { perActie[l.actieId] = (perActie[l.actieId] || 0) + 1; });
+
+  let h = '';
+  if (!S.deelnemers.length) {
+    h += `<div class="notice info">Welkom! Begin met het toevoegen van je <a href="#/deelnemer/nieuw">deelnemers</a> (naam + IBAN). Daarna maak je per actie een <a href="#/actie-nieuw">nieuwe actie</a> aan; de loten worden dan automatisch voor iedereen klaargezet.</div>`;
+  }
+  const lb = S.meta.lastBackup;
+  if (serverVersion === null && S.loten.length && (!lb || diffDays(lb) < -30)) {
+    h += `<div class="notice warn">Je gegevens staan alleen in deze browser. ${lb ? `Laatste backup: ${fmt(lb)}.` : 'Je hebt nog geen backup gemaakt.'} <a href="#/backup">Maak een backup</a>.</div>`;
+  }
+  h += `<div class="tiles">
+    <div class="tile ${late ? 'bad' : ''}"><b>${open.length}</b><span>op te zeggen${late ? ` · ${late} te laat` : ''}</span></div>
+    <div class="tile"><b>${todo.length}</b><span>nog aan te melden</span></div>
+    <div class="tile"><b>${cadeaus.length}</b><span>cadeaus onderweg</span></div>
+    <div class="tile"><b>${S.loten.filter(l => l.status === 'opgezegd').length}</b><span>afgerond / opgezegd</span></div>
+    <a class="tile" href="#/opbrengsten" style="text-decoration:none;color:inherit"><b>${eur(S.opbrengsten.reduce((s, o) => s + opbNetto(o), 0) - inlegKosten(S.loten))}</b><span>netto opbrengst →</span></a>
+  </div>`;
+  const teKoop = S.opbrengsten.filter(o => o.status === 'te-koop' && o.geldigTot && diffDays(o.geldigTot) <= 14);
+  if (teKoop.length) {
+    h += '<h3>Nog verkopen – verloopt binnenkort</h3>' + teKoop.map(opbCard).join('');
+  }
+
+  h += '<h3>Op te zeggen</h3>';
+  h += open.length ? open.map(l => lotCard(l, { toonActie: true })).join('') : '<div class="empty">Niets op te zeggen. 🎉</div>';
+
+  if (Object.keys(perActie).length) {
+    h += '<h3>Nog aan te melden</h3>';
+    h += Object.entries(perActie).map(([aid, n]) => {
+      const a = act(aid) || {};
+      return `<div class="card row"><div class="grow"><a href="#/actie/${aid}"><b>${esc(a.loterij)}</b> – ${esc(a.naam)}</a></div><span class="chip">${plural(n, 'lot', 'loten')}</span><a class="btn" href="#/actie/${aid}">Invullen →</a></div>`;
+    }).join('');
+  }
+  if (cadeaus.length) {
+    h += '<h3>Cadeau nog niet ontvangen</h3>';
+    h += cadeaus.map(l => lotCard(l, { toonActie: true })).join('');
+  }
+  return h;
+}
+
+function vActies() {
+  const list = [...S.acties].sort((a, b) => (b.created || '').localeCompare(a.created || ''));
+  let h = `<div class="row" style="margin-bottom:12px"><h2 class="grow" style="margin:0">Acties</h2><a class="btn primary" href="#/actie-nieuw">+ Nieuwe actie</a></div>`;
+  if (!list.length) return h + '<div class="empty">Nog geen acties.</div>';
+  return h + list.map(a => {
+    const ls = S.loten.filter(l => l.actieId === a.id);
+    const c = s => ls.filter(l => l.status === s).length;
+    const pct = ls.length ? Math.round(c('opgezegd') / ls.length * 100) : 0;
+    const opb = S.opbrengsten.filter(o => o.actieId === a.id).reduce((s, o) => s + opbNetto(o), 0) - inlegKosten(ls);
+    return `<div class="card"><div class="row">
+      <div class="grow"><a href="#/actie/${a.id}"><b>${esc(a.loterij)}</b> – ${esc(a.naam)}</a>
+        <div class="small muted">${a.type === 'cadeau' ? '🎁 Cadeau na 1× inleg' + (a.cadeau ? ': ' + esc(a.cadeau) : '') : '🆓 Gratis meespelen'} · gestart ${fmt(a.startdatum)}</div></div>
+      <span class="chip">${c('te-melden')} aanmelden</span><span class="chip warn">${c('aangemeld')} opzeggen</span><span class="chip ok">${c('opgezegd')} opgezegd</span>
+      ${opb ? `<span class="chip ${opb > 0 ? 'acc' : 'bad'}">${eur(opb)}</span>` : ''}
+    </div><div class="bar"><i style="width:${pct}%"></i></div></div>`;
+  }).join('');
+}
+
+function ibanWaarschuwing(actieId) {
+  const tel = {};
+  S.loten.filter(l => l.actieId === actieId).forEach(l => {
+    const d = dn(l.deelnemerId); if (!d) return;
+    const k = normIban(d.iban); tel[k] = (tel[k] || 0) + 1;
+  });
+  const teVeel = Object.entries(tel).filter(([, n]) => n > 2);
+  return teVeel.length
+    ? `<div class="notice bad">Let op: ${teVeel.map(([k, n]) => `<span class="mono">${fmtIban(k)}</span> (${n}×)`).join(', ')} – meer dan 2 deelnames per IBAN in deze actie.</div>` : '';
+}
+
+function vActie(id) {
+  const a = act(id);
+  if (!a) return '<div class="empty">Actie niet gevonden.</div>';
+  const ls = S.loten.filter(l => l.actieId === id);
+  const volgorde = { 'te-melden': 0, aangemeld: 1, opgezegd: 2 };
+  ls.sort((x, y) => volgorde[x.status] - volgorde[y.status] || label(dn(x.deelnemerId) || {}).localeCompare(label(dn(y.deelnemerId) || {})));
+  const nietIn = S.deelnemers.filter(d => !ls.some(l => l.deelnemerId === d.id));
+
+  let h = `<div class="card">
+    <div class="row"><h2 class="grow" style="margin:0">${esc(a.loterij)} – ${esc(a.naam)}</h2>
+      <a class="btn" href="#/opbrengst/nieuw/${a.id}">+ Prijs / opbrengst</a><a class="btn" href="#/actie-edit/${a.id}">Bewerken</a><button class="danger" data-act="actie-del" data-id="${a.id}">Verwijderen</button></div>
+    <div class="small muted" style="margin-top:6px">
+      ${a.type === 'cadeau' ? `🎁 Cadeau na 1× inleg${a.cadeau ? ': <b>' + esc(a.cadeau) + '</b>' : ''}${a.waarde ? ` (waarde €${esc(a.waarde)})` : ''}${a.inleg ? ` · inleg €${esc(a.inleg)}` : ''} · opzeggen nadat de eerste inleg is afgeschreven`
+        : '🆓 Gratis meespelen · direct opzeggen na aanmelding'}
+      · opzegtermijn ${plural(a.opzegNaDagen, 'dag', 'dagen')} na aanmelding
+      ${a.link ? ` · <a href="${esc(a.link)}" target="_blank" rel="noopener">actiepagina ↗</a>` : ''}
+    </div>
+    ${a.notities ? `<div class="small" style="margin-top:6px;white-space:pre-wrap">${esc(a.notities)}</div>` : ''}
+  </div>`;
+  h += ibanWaarschuwing(id);
+  const opbs = S.opbrengsten.filter(o => o.actieId === id);
+  if (opbs.length) h += `<h3>Opbrengsten (${eur(opbs.reduce((s, o) => s + opbNetto(o), 0) - inlegKosten(ls))} netto)</h3>` + opbs.map(opbCard).join('') + '<h3>Loten</h3>';
+  h += ls.length ? ls.map(l => lotCard(l)).join('') : '<div class="empty">Geen loten in deze actie.</div>';
+  if (nietIn.length) {
+    h += `<details class="card"><summary>Deelnemers toevoegen aan deze actie (${nietIn.length})</summary>
+      <div id="add-dn" style="margin-top:8px">${dnCheckboxes(nietIn, false)}</div>
+      <div class="actions"><button class="primary" data-act="add-dn" data-id="${id}">Toevoegen</button></div></details>`;
+  }
+  return h;
+}
+
+function dnCheckboxes(lijst, checked) {
+  const groepen = {};
+  lijst.forEach(d => { (groepen[normIban(d.iban)] ||= []).push(d); });
+  return Object.entries(groepen).map(([iban, ds]) =>
+    `<div style="margin:6px 0"><div class="small muted mono">${fmtIban(iban) || '(geen IBAN)'}</div>
+      ${ds.map(d => `<label class="cb" style="margin-right:14px"><input type="checkbox" name="dn" value="${d.id}" ${checked ? 'checked' : ''}> ${esc(label(d))}</label>`).join('')}</div>`).join('');
+}
+
+function vActieForm(id) {
+  const a = id ? act(id) : { loterij: 'VriendenLoterij', type: 'gratis', opzegNaDagen: DEFAULT_DAGEN.gratis, startdatum: today() };
+  if (!a) return '<div class="empty">Actie niet gevonden.</div>';
+  return `<h2>${id ? 'Actie bewerken' : 'Nieuwe actie'}</h2>
+  <form class="card" id="actie-form" data-id="${id || ''}">
+    <div class="grid">
+      <label class="f">Loterij<select name="loterij">${LOTERIJEN.map(x => `<option ${a.loterij === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
+      <label class="f">Naam van de actie<input name="naam" required value="${esc(a.naam)}" placeholder="bijv. 3 maanden gratis meespelen"></label>
+      <label class="f">Soort actie<select name="type">
+        <option value="gratis" ${a.type === 'gratis' ? 'selected' : ''}>Gratis meespelen → direct opzeggen</option>
+        <option value="cadeau" ${a.type === 'cadeau' ? 'selected' : ''}>Cadeau na 1× inleg → opzeggen na afschrijving</option>
+      </select></label>
+      <label class="f">Opzeggen binnen (dagen na aanmelding)<input name="opzegNaDagen" type="number" min="0" value="${esc(a.opzegNaDagen)}"></label>
+      <label class="f">Startdatum actie<input name="startdatum" type="date" value="${esc(a.startdatum)}"></label>
+      <label class="f">Cadeau<input name="cadeau" value="${esc(a.cadeau)}" placeholder="bijv. Philips airfryer"></label>
+      <label class="f">Waarde cadeau (€)<input name="waarde" value="${esc(a.waarde)}"></label>
+      <label class="f">Inleg (€)<input name="inleg" value="${esc(a.inleg)}"></label>
+      <label class="f" style="grid-column:1/-1">Link naar actiepagina<input name="link" type="url" value="${esc(a.link)}"></label>
+      <label class="f" style="grid-column:1/-1">Notities (voorwaarden, actiecode, hoe opzeggen…)<textarea name="notities">${esc(a.notities)}</textarea></label>
+    </div>
+    ${id ? '' : `<h3>Deelnemers (per IBAN max. 2)</h3>${S.deelnemers.length ? dnCheckboxes(S.deelnemers, true) : '<div class="empty">Nog geen deelnemers. <a href="#/deelnemer/nieuw">Voeg eerst deelnemers toe</a>.</div>'}`}
+    <div class="actions"><button class="primary" type="submit">${id ? 'Opslaan' : 'Actie aanmaken'}</button><a class="btn" href="${id ? '#/actie/' + id : '#/acties'}">Annuleren</a></div>
+  </form>`;
+}
+
+function vDeelnemers() {
+  const groepen = {};
+  S.deelnemers.forEach(d => { (groepen[normIban(d.iban)] ||= []).push(d); });
+  let h = `<div class="row" style="margin-bottom:12px"><h2 class="grow" style="margin:0">Deelnemers</h2><a class="btn primary" href="#/deelnemer/nieuw">+ Nieuwe deelnemer</a></div>
+    <p class="muted small">Een deelnemer = één set gegevens met één IBAN. Per IBAN mag je 2× per actie meedoen, dus maak per IBAN maximaal 2 deelnemers aan (bijv. jij en je partner). Gebruik “Kopiëren” om snel een deelnemer met hetzelfde adres en een ander IBAN te maken.</p>`;
+  if (!S.deelnemers.length) return h + '<div class="empty">Nog geen deelnemers.</div>';
+  return h + Object.entries(groepen).map(([iban, ds]) => `<div class="card">
+    <div class="row"><b class="mono grow">${fmtIban(iban) || '(geen IBAN)'}</b>
+      ${iban && !ibanOk(iban) ? '<span class="chip bad">IBAN ongeldig</span>' : ''}
+      <span class="chip ${ds.length > 2 ? 'bad' : 'acc'}">${ds.length}/2</span></div>
+    <table>${ds.map(d => `<tr><td><b>${esc(label(d))}</b><div class="small muted">${esc(naamVol(d))}${d.email ? ' · ' + esc(d.email) : ''}</div></td>
+      <td class="small muted">${S.loten.filter(l => l.deelnemerId === d.id).length} loten</td>
+      <td style="text-align:right;white-space:nowrap"><a class="btn" href="#/deelnemer/${d.id}">Bewerken</a> <button data-act="dn-dup" data-id="${d.id}">Kopiëren</button> <button class="danger" data-act="dn-del" data-id="${d.id}">×</button></td></tr>`).join('')}</table>
+  </div>`).join('');
+}
+
+function vDeelnemerForm(id) {
+  const nieuw = id === 'nieuw';
+  const d = nieuw ? {} : dn(id);
+  if (!d) return '<div class="empty">Deelnemer niet gevonden.</div>';
+  return `<h2>${nieuw ? 'Nieuwe deelnemer' : 'Deelnemer bewerken'}</h2>
+  <form class="card" id="dn-form" data-id="${nieuw ? '' : id}"><div class="grid">
+    ${DFIELDS.map(([k, t, type, opts]) => type === 'select'
+      ? `<label class="f">${t}<select name="${k}">${opts.map(o => `<option ${d[k] === o ? 'selected' : ''}>${o}</option>`).join('')}</select></label>`
+      : `<label class="f">${t}<input name="${k}" type="${type || 'text'}" value="${esc(k === 'iban' ? fmtIban(d[k]) : d[k])}" ${k === 'iban' ? 'required' : ''}></label>`).join('')}
+  </div>
+  <div class="actions"><button class="primary" type="submit">Opslaan</button><a class="btn" href="#/deelnemers">Annuleren</a></div></form>`;
+}
+
+function opbCard(o) {
+  const a = act(o.actieId);
+  const st = { bewaard: 'acc', 'te-koop': 'warn', verkocht: 'ok', gebruikt: 'ok' }[o.status] || '';
+  let geldig = '';
+  if (o.geldigTot && o.status !== 'verkocht' && o.status !== 'gebruikt') {
+    const n = diffDays(o.geldigTot);
+    geldig = `<span class="chip ${n < 0 ? 'bad' : n <= 14 ? 'warn' : ''}">${n < 0 ? 'verlopen' : 'geldig t/m'} ${fmt(o.geldigTot)}</span>`;
+  }
+  return `<div class="card"><div class="row">
+    <div class="grow"><b>${esc(o.omschrijving) || '(geen omschrijving)'}</b>
+      <div class="small muted">${SOORTEN[o.soort] || ''} · ${esc(opbLoterij(o))}${a ? ' – ' + esc(a.naam) : ''} · ${fmt(o.datum)}</div></div>
+    ${geldig}<span class="chip ${st}">${OSTATUS[o.status] || o.status}</span>
+    <b>${eur(opbNetto(o))}</b>
+    <a class="btn" href="#/opbrengst/${o.id}">Bewerken</a>
+  </div></div>`;
+}
+
+function vOpbrengsten() {
+  const os = [...S.opbrengsten].sort((a, b) => (b.datum || '').localeCompare(a.datum || ''));
+  const som = (lijst, f) => lijst.reduce((s, o) => s + f(o), 0);
+  const verkocht = som(os.filter(o => o.status === 'verkocht'), o => num(o.verkochtVoor));
+  const inBezit = som(os.filter(o => o.status === 'bewaard' || o.status === 'te-koop'), o => num(o.waarde));
+  const gebruikt = som(os.filter(o => o.status === 'gebruikt'), o => num(o.waarde));
+  const kosten = inlegKosten(S.loten) + som(os, o => num(o.kosten));
+  const netto = verkocht + inBezit + gebruikt - kosten;
+
+  let h = `<div class="row" style="margin-bottom:12px"><h2 class="grow" style="margin:0">Opbrengsten</h2><a class="btn primary" href="#/opbrengst/nieuw">+ Nieuwe opbrengst</a></div>
+  <div class="tiles">
+    <div class="tile"><b>${eur(netto)}</b><span>netto totaal</span></div>
+    <div class="tile"><b>${eur(verkocht)}</b><span>verkocht (cash)</span></div>
+    <div class="tile"><b>${eur(gebruikt)}</b><span>zelf gebruikt / geld</span></div>
+    <div class="tile"><b>${eur(inBezit)}</b><span>nog in bezit (geschat)</span></div>
+    <div class="tile ${kosten ? 'bad' : ''}"><b>${eur(kosten)}</b><span>kosten (inleg e.d.)</span></div>
+  </div>
+  <p class="small muted">Welkomstcadeaus komen hier automatisch bij zodra je “cadeau ontvangen” aanvinkt. Prijzen en kaartjes voeg je zelf toe. Verkoop je iets, zet de status dan op “Verkocht” en vul de verkoopprijs in; dan telt die in plaats van de geschatte waarde. Inleg telt als kosten bij loten met “inleg afgeschreven”.</p>`;
+
+  if (!os.length) return h + '<div class="empty">Nog geen opbrengsten.</div>';
+
+  const perLot = {};
+  os.forEach(o => { const k = opbLoterij(o); (perLot[k] ||= { opb: 0, kosten: 0, n: 0 }); perLot[k].opb += opbBruto(o); perLot[k].kosten += num(o.kosten); perLot[k].n++; });
+  S.loten.filter(l => l.inlegBetaald).forEach(l => { const a = act(l.actieId); if (!a) return; const k = a.loterij; (perLot[k] ||= { opb: 0, kosten: 0, n: 0 }); perLot[k].kosten += num(a.inleg); });
+  h += `<h3>Per loterij</h3><div class="card"><table><tr><th>Loterij</th><th>Items</th><th>Opbrengst</th><th>Kosten</th><th>Netto</th></tr>
+    ${Object.entries(perLot).map(([k, v]) => `<tr><td>${esc(k)}</td><td>${v.n}</td><td>${eur(v.opb)}</td><td>${eur(v.kosten)}</td><td><b>${eur(v.opb - v.kosten)}</b></td></tr>`).join('')}</table></div>`;
+
+  const teKoop = os.filter(o => o.status === 'te-koop').sort((a, b) => (a.geldigTot || '9999').localeCompare(b.geldigTot || '9999'));
+  if (teKoop.length) h += '<h3>Te koop</h3>' + teKoop.map(opbCard).join('');
+  const rest = os.filter(o => o.status !== 'te-koop');
+  if (rest.length) h += '<h3>Alle overige</h3>' + rest.map(opbCard).join('');
+  return h;
+}
+
+function vOpbrengstForm(id, actieId) {
+  const nieuw = id === 'nieuw';
+  const a0 = act(actieId);
+  const o = nieuw ? { datum: today(), soort: 'prijs', status: 'bewaard', actieId: a0?.id || '', loterij: a0?.loterij || 'VriendenLoterij' } : S.opbrengsten.find(x => x.id === id);
+  if (!o) return '<div class="empty">Opbrengst niet gevonden.</div>';
+  const opt = (obj, cur) => Object.entries(obj).map(([k, t]) => `<option value="${k}" ${cur === k ? 'selected' : ''}>${t}</option>`).join('');
+  return `<h2>${nieuw ? 'Nieuwe opbrengst' : 'Opbrengst bewerken'}</h2>
+  <form class="card" id="opb-form" data-id="${nieuw ? '' : id}"><div class="grid">
+    <label class="f" style="grid-column:1/-1">Omschrijving<input name="omschrijving" required value="${esc(o.omschrijving)}" placeholder="bijv. 2× Blijdorp-kaartjes"></label>
+    <label class="f">Soort<select name="soort">${opt(SOORTEN, o.soort)}</select></label>
+    <label class="f">Datum ontvangen<input type="date" name="datum" value="${esc(o.datum)}"></label>
+    <label class="f">Loterij<select name="loterij">${LOTERIJEN.map(x => `<option ${o.loterij === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
+    <label class="f">Actie (optioneel)<select name="actieId"><option value="">–</option>${S.acties.map(a => `<option value="${a.id}" ${o.actieId === a.id ? 'selected' : ''}>${esc(a.loterij)} – ${esc(a.naam)}</option>`).join('')}</select></label>
+    <label class="f">Geschatte waarde (€)<input name="waarde" inputmode="decimal" value="${esc(o.waarde)}"></label>
+    <label class="f">Status<select name="status">${opt(OSTATUS, o.status)}</select></label>
+    <label class="f">Verkocht voor (€)<input name="verkochtVoor" inputmode="decimal" value="${esc(o.verkochtVoor)}"></label>
+    <label class="f">Verkocht op<input type="date" name="verkochtOp" value="${esc(o.verkochtOp)}"></label>
+    <label class="f">Kosten (verzending, platform…) (€)<input name="kosten" inputmode="decimal" value="${esc(o.kosten)}"></label>
+    <label class="f">Geldig t/m (kaartjes/bonnen)<input type="date" name="geldigTot" value="${esc(o.geldigTot)}"></label>
+    <label class="f" style="grid-column:1/-1">Notitie (bijv. verkocht via Marktplaats)<input name="notitie" value="${esc(o.notitie)}"></label>
+  </div>
+  <div class="actions"><button class="primary" type="submit">Opslaan</button><a class="btn" href="#/opbrengsten">Annuleren</a>
+    ${nieuw ? '' : `<button type="button" class="danger" data-act="opb-del" data-id="${id}">Verwijderen</button>`}</div></form>`;
+}
+
+function vBackup() {
+  return `<h2>Backup &amp; export</h2>
+  ${serverVersion === null
+    ? `<div class="notice info">Alle gegevens (ook je IBAN's) worden alleen lokaal in deze browser bewaard, niet online. Als je de browsergeschiedenis/sitegegevens wist, ben je ze kwijt – maak dus regelmatig een backup.</div>`
+    : `<div class="notice info">Je gegevens staan op je eigen server (map <span class="mono">/data</span> in de container), met elk uur een automatische backup. Een download hieronder is handig als extra kopie.</div>`}
+  <div class="card"><b>Backup maken</b><p class="small muted">Download alle deelnemers, acties en loten als één bestand.${S.meta.lastBackup ? ' Laatste backup: ' + fmt(S.meta.lastBackup) + '.' : ''}</p>
+    <button class="primary" data-act="export">Backup downloaden (.json)</button></div>
+  <div class="card"><b>Backup terugzetten</b><p class="small muted">Let op: dit vervangt alle huidige gegevens.</p>
+    <input type="file" id="import" accept=".json,application/json"></div>
+  <div class="card"><b>Statusupdate importeren</b><p class="small muted">Bestand met alleen lot-statussen en lotnummers (zonder persoonsgegevens), bijv. van Claude na het aanmelden of opzeggen. Je bestaande gegevens blijven gewoon staan.</p>
+    <input type="file" id="import-update" accept=".json,application/json"></div>
+  <div class="card"><b>Herinneringen in je agenda</b><p class="small muted">Download een agendabestand met een herinnering (om 09:00) op de opzegdatum van elk openstaand lot. Openen in Outlook/Google Agenda/iPhone. Importeer opnieuw na nieuwe aanmeldingen; bestaande afspraken worden bijgewerkt.</p>
+    <button data-act="ics">Agenda-bestand (.ics)</button></div>
+  <div class="card"><b>Export naar Excel</b><p class="small muted">Alle loten als CSV-bestand.</p>
+    <button data-act="csv">Loten exporteren (.csv)</button> <button data-act="csv-opb">Opbrengsten exporteren (.csv)</button></div>`;
+}
+
+// ---------- acties ----------
+const ACTIONS = {
+  aangemeld(id) {
+    const l = lot(id), a = act(l.actieId);
+    Object.assign(l, { status: 'aangemeld', aangemeldOp: today(), deadline: addDays(today(), a?.opzegNaDagen) });
+    openLots.delete(id); save(); render(); toast('Aangemeld – opzeggen vóór ' + fmt(l.deadline));
+  },
+  opgezegd(id) { Object.assign(lot(id), { status: 'opgezegd', opgezegdOp: today() }); save(); render(); toast('Opgezegd ✓'); },
+  heropen(id) { Object.assign(lot(id), { status: 'aangemeld', opgezegdOp: null }); save(); render(); },
+  reset(id) { Object.assign(lot(id), { status: 'te-melden', aangemeldOp: null, deadline: null }); save(); render(); },
+  'lot-del'(id) {
+    if (!confirm('Dit lot verwijderen?')) return;
+    S.loten = S.loten.filter(l => l.id !== id); save(); render();
+  },
+  async copy(_, b) {
+    if (await copyText(b.dataset.v)) { b.classList.add('done'); toast('Gekopieerd: ' + b.dataset.v); }
+  },
+  'actie-del'(id) {
+    if (!confirm('Deze actie en al haar loten verwijderen?')) return;
+    S.acties = S.acties.filter(a => a.id !== id); S.loten = S.loten.filter(l => l.actieId !== id);
+    save(); location.hash = '#/acties';
+  },
+  'add-dn'(id) {
+    const ids = [...document.querySelectorAll('#add-dn input[name=dn]:checked')].map(i => i.value);
+    ids.forEach(did => S.loten.push(nieuwLot(id, did)));
+    save(); render();
+  },
+  'dn-dup'(id) {
+    const kopie = { ...dn(id), id: uid(), iban: '', tenaamstelling: '', label: '' };
+    S.deelnemers.push(kopie); save(); location.hash = '#/deelnemer/' + kopie.id;
+  },
+  'dn-del'(id) {
+    const n = S.loten.filter(l => l.deelnemerId === id).length;
+    if (!confirm(n ? `Deze deelnemer zit in ${n} loten. Toch verwijderen? (De loten blijven bestaan.)` : 'Deze deelnemer verwijderen?')) return;
+    S.deelnemers = S.deelnemers.filter(d => d.id !== id); save(); render();
+  },
+  export() {
+    S.meta.lastBackup = today(); save();
+    download(`loterij-backup-${today()}.json`, JSON.stringify(S, null, 2), 'application/json');
+    render();
+  },
+  ics() {
+    const open = S.loten.filter(l => l.status === 'aangemeld' && l.deadline);
+    if (!open.length) return toast('Geen openstaande opzegdata');
+    const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
+    const icsEsc = s => String(s || '').replace(/[\\;,]/g, m => '\\' + m).replace(/\n/g, '\\n');
+    const ev = open.map(l => {
+      const a = act(l.actieId) || {}, d = dn(l.deelnemerId) || {};
+      return ['BEGIN:VEVENT', `UID:${l.id}@loterijtracker`, `DTSTAMP:${stamp}`,
+        `DTSTART;VALUE=DATE:${l.deadline.replace(/-/g, '')}`, `DTEND;VALUE=DATE:${addDays(l.deadline, 1).replace(/-/g, '')}`,
+        `SUMMARY:${icsEsc(`Opzeggen ${a.loterij}: ${label(d)}`)}`,
+        `DESCRIPTION:${icsEsc(`Actie: ${a.naam}\nDeelnemer: ${naamVol(d)}\nIBAN: ${fmtIban(d.iban)}${l.kenmerk ? '\nLotnummer: ' + l.kenmerk : ''}`)}`,
+        'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:Lot opzeggen', 'TRIGGER:PT9H', 'END:VALARM', 'END:VEVENT'].join('\r\n');
+    });
+    download('loterij-opzeggen.ics', ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Loterij Tracker//NL', ...ev, 'END:VCALENDAR'].join('\r\n'), 'text/calendar');
+  },
+  csv() {
+    const kol = ['Loterij', 'Actie', 'Soort', 'Deelnemer', 'IBAN', 'Status', 'Aangemeld op', 'Opzeggen voor', 'Opgezegd op', 'Inleg afgeschreven', 'Cadeau ontvangen', 'Lotnummer', 'Notitie'];
+    const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const rows = S.loten.map(l => {
+      const a = act(l.actieId) || {}, d = dn(l.deelnemerId) || {};
+      return [a.loterij, a.naam, a.type, label(d), fmtIban(d.iban), l.status, fmt(l.aangemeldOp), fmt(l.deadline), fmt(l.opgezegdOp),
+        l.inlegBetaald ? 'ja' : '', l.cadeauOntvangen ? 'ja' : '', l.kenmerk, l.notitie].map(q).join(';');
+    });
+    download(`loterij-loten-${today()}.csv`, '﻿' + [kol.map(q).join(';'), ...rows].join('\r\n'), 'text/csv');
+  },
+  'csv-opb'() {
+    const kol = ['Datum', 'Omschrijving', 'Soort', 'Loterij', 'Actie', 'Geschatte waarde', 'Status', 'Verkocht voor', 'Verkocht op', 'Kosten', 'Netto', 'Geldig t/m', 'Notitie'];
+    const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const bedrag = n => n.toFixed(2).replace('.', ',');
+    const rows = S.opbrengsten.map(o => [fmt(o.datum), o.omschrijving, SOORTEN[o.soort], opbLoterij(o), act(o.actieId)?.naam, bedrag(num(o.waarde)), OSTATUS[o.status],
+      o.verkochtVoor ? bedrag(num(o.verkochtVoor)) : '', o.verkochtOp ? fmt(o.verkochtOp) : '', o.kosten ? bedrag(num(o.kosten)) : '', bedrag(opbNetto(o)),
+      o.geldigTot ? fmt(o.geldigTot) : '', o.notitie].map(q).join(';'));
+    download(`loterij-opbrengsten-${today()}.csv`, '﻿' + [kol.map(q).join(';'), ...rows].join('\r\n'), 'text/csv');
+  },
+  'opb-del'(id) {
+    if (!confirm('Deze opbrengst verwijderen?')) return;
+    S.opbrengsten = S.opbrengsten.filter(o => o.id !== id); save(); location.hash = '#/opbrengsten';
+  },
+};
+
+function nieuwLot(actieId, deelnemerId) {
+  return { id: uid(), actieId, deelnemerId, status: 'te-melden', aangemeldOp: null, deadline: null, opgezegdOp: null, inlegBetaald: false, cadeauOntvangen: false, kenmerk: '', notitie: '' };
+}
+
+function ibanTelling(ids) {
+  const tel = {};
+  ids.forEach(id => { const k = normIban(dn(id)?.iban); tel[k] = (tel[k] || 0) + 1; });
+  return Object.entries(tel).filter(([, n]) => n > 2);
+}
+
+// ---------- events ----------
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]');
+  if (!b || !ACTIONS[b.dataset.act]) return;
+  e.preventDefault();
+  ACTIONS[b.dataset.act](b.dataset.id, b);
+});
+
+document.addEventListener('toggle', e => {
+  const id = e.target.dataset?.lot;
+  if (id) e.target.open ? openLots.add(id) : openLots.delete(id);
+}, true);
+
+document.addEventListener('change', e => {
+  const t = e.target;
+  if (t.dataset.toggle) {
+    const l = lot(t.dataset.id), a = act(l.actieId);
+    l[t.dataset.toggle] = t.checked;
+    if (t.dataset.toggle === 'cadeauOntvangen') {
+      if (t.checked && !S.opbrengsten.some(o => o.lotId === l.id)) {
+        S.opbrengsten.push({ id: uid(), lotId: l.id, actieId: l.actieId, loterij: a?.loterij, soort: 'cadeau', datum: today(),
+          omschrijving: a?.cadeau || 'Welkomstcadeau', waarde: a?.waarde || '', status: 'bewaard' });
+        toast('Toegevoegd aan opbrengsten');
+      } else if (!t.checked) {
+        // alleen het automatisch aangemaakte, nog onaangeroerde item weghalen
+        S.opbrengsten = S.opbrengsten.filter(o => !(o.lotId === l.id && o.status === 'bewaard' && !o.verkochtVoor));
+      }
+    }
+    save(); render();
+  } else if (t.dataset.lotfield) {
+    const l = lot(t.dataset.id), f = t.dataset.lotfield;
+    l[f] = t.value || (f === 'kenmerk' || f === 'notitie' ? '' : null);
+    if (f === 'aangemeldOp' && t.value) l.deadline = addDays(t.value, act(l.actieId)?.opzegNaDagen);
+    save(); render();
+  } else if (t.id === 'import' && t.files[0]) {
+    const r = new FileReader();
+    r.onload = () => {
+      try {
+        const data = JSON.parse(r.result);
+        if (!Array.isArray(data.loten) || !Array.isArray(data.deelnemers)) throw 0;
+        if (!confirm(`Backup bevat ${data.deelnemers.length} deelnemers, ${data.acties.length} acties en ${data.loten.length} loten. Huidige gegevens vervangen?`)) return;
+        S = normalize(data); save(); location.hash = '#/overzicht'; render(); toast('Backup teruggezet');
+      } catch (err) { alert('Dit is geen geldig backupbestand.'); }
+    };
+    r.readAsText(t.files[0]);
+  } else if (t.id === 'import-update' && t.files[0]) {
+    const r = new FileReader();
+    r.onload = () => {
+      try {
+        const data = JSON.parse(r.result);
+        if (data.type !== 'loterij-update' || !Array.isArray(data.loten)) throw 0;
+        let n = 0, mis = 0;
+        // nieuwe acties en loten mogen meekomen (alleen ID's, geen persoonsgegevens)
+        (data.acties || []).forEach(a => { if (!act(a.id)) S.acties.push({ created: new Date().toISOString(), ...a }); });
+        data.loten.forEach(u => {
+          if (!lot(u.id) && u.actieId && act(u.actieId)) S.loten.push({ ...nieuwLot(u.actieId, u.deelnemerId), id: u.id });
+          const l = lot(u.id);
+          if (!l) { mis++; return; }
+          ['status', 'aangemeldOp', 'deadline', 'opgezegdOp', 'kenmerk', 'notitie', 'inlegBetaald', 'cadeauOntvangen']
+            .forEach(k => { if (u[k] !== undefined) l[k] = u[k]; });
+          if (u.aangemeldOp && !u.deadline) l.deadline = addDays(u.aangemeldOp, act(l.actieId)?.opzegNaDagen);
+          n++;
+        });
+        save(); location.hash = '#/overzicht'; render();
+        toast(`${plural(n, 'lot', 'loten')} bijgewerkt${mis ? ` (${mis} niet gevonden)` : ''}`);
+      } catch (err) { alert('Dit is geen geldig statusupdate-bestand.'); }
+    };
+    r.readAsText(t.files[0]);
+  } else if (t.name === 'type' && t.form?.id === 'actie-form') {
+    t.form.opzegNaDagen.value = DEFAULT_DAGEN[t.value];
+  }
+});
+
+document.addEventListener('submit', e => {
+  const f = e.target;
+  e.preventDefault();
+  const fd = Object.fromEntries(new FormData(f));
+  if (f.id === 'actie-form') {
+    const id = f.dataset.id;
+    const velden = { loterij: fd.loterij, naam: fd.naam.trim(), type: fd.type, opzegNaDagen: Number(fd.opzegNaDagen) || 0, startdatum: fd.startdatum,
+      cadeau: fd.cadeau, waarde: fd.waarde, inleg: fd.inleg, link: fd.link, notities: fd.notities };
+    if (id) { Object.assign(act(id), velden); save(); location.hash = '#/actie/' + id; return; }
+    const ids = new FormData(f).getAll('dn');
+    const teVeel = ibanTelling(ids);
+    if (teVeel.length && !confirm(`Je hebt meer dan 2 deelnemers met hetzelfde IBAN geselecteerd (${teVeel.map(([k]) => fmtIban(k)).join(', ')}). Toch doorgaan?`)) return;
+    const a = { id: uid(), created: new Date().toISOString(), ...velden };
+    S.acties.push(a);
+    ids.forEach(did => S.loten.push(nieuwLot(a.id, did)));
+    save(); location.hash = '#/actie/' + a.id;
+  } else if (f.id === 'opb-form') {
+    const id = f.dataset.id;
+    if (fd.actieId) fd.loterij = act(fd.actieId)?.loterij || fd.loterij;
+    if (fd.status === 'verkocht' && !fd.verkochtOp) fd.verkochtOp = today();
+    if (id) Object.assign(S.opbrengsten.find(o => o.id === id), fd); else S.opbrengsten.push({ id: uid(), ...fd });
+    save(); history.length > 1 ? history.back() : (location.hash = '#/opbrengsten');
+  } else if (f.id === 'dn-form') {
+    if (!ibanOk(fd.iban) && !confirm('Dit IBAN lijkt ongeldig. Toch opslaan?')) return;
+    fd.iban = normIban(fd.iban);
+    fd.postcode = (fd.postcode || '').toUpperCase();
+    const id = f.dataset.id;
+    if (id) Object.assign(dn(id), fd); else S.deelnemers.push({ id: uid(), ...fd });
+    save(); location.hash = '#/deelnemers';
+  }
+});
+
+window.addEventListener('hashchange', () => { render(); window.scrollTo(0, 0); });
+// wijzigingen uit een ander tabblad (bijv. door Claude) direct overnemen
+window.addEventListener('storage', e => {
+  if (e.key !== KEY || serverVersion !== null) return;
+  S = normalize(load()); render();
+});
+init();
+</script>
+</body>
+</html>

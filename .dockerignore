@@ -1,0 +1,7 @@
+# Nooit persoonsgegevens of geheimen in het image
+*
+!Dockerfile
+!package.json
+!server.js
+!public/
+!public/index.html

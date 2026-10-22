@@ -1,0 +1,13 @@
+{
+  "name": "loterij-tracker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Tracker voor loterij-acties, opzegdatums en opbrengsten",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

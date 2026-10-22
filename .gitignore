@@ -1,0 +1,8 @@
+# Persoonsgegevens en geheimen nooit committen
+*.json
+!package.json
+data/
+.env
+*.ics
+*.csv
+node_modules/
