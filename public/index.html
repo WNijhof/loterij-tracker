@@ -263,7 +263,8 @@ const opbNetto = o => opbBruto(o) - num(o.kosten);
 const lotKosten = l => (l.inlegBetaald ? num(act(l.actieId)?.inleg) : 0) + (l.onterechtOp && !l.teruggeboekt ? num(l.onterechtBedrag) : 0);
 const inlegKosten = loten => loten.reduce((s, l) => s + lotKosten(l), 0);
 const TREKKINGEN = { 'Postcode Loterij': 14, 'VriendenLoterij': 15, 'BankGiro Loterij': 12 };
-const lotLoterij = l => act(l.actieId)?.loterij || '';
+// een lot zonder actie (bijv. een vast lot) heeft zelf een loterij
+const lotLoterij = l => act(l.actieId)?.loterij || l.loterij || '';
 const kostenPerMaand = l => num(l.prijs) * (TREKKINGEN[lotLoterij(l)] || 12) / 12;
 const STORNO_DAGEN = 56;
 
@@ -400,7 +401,7 @@ function relDagen(iso) {
 
 function lotCard(l, { inActie = false } = {}) {
   const a = act(l.actieId) || {}, d = dn(l.deelnemerId);
-  const loterij = a.loterij || '';
+  const loterij = lotLoterij(l);
   const [stTekst, stKleur] = lotStatus(l);
   const nu = ditJaarMaand();
 
@@ -467,7 +468,8 @@ function lotCard(l, { inActie = false } = {}) {
         <label>Aangemeld op<input type="date" data-lotfield="aangemeldOp" data-id="${l.id}" value="${l.aangemeldOp || ''}"></label>
         <label>Account (inlog bij loterij)<input list="accounts" data-lotfield="account" data-id="${l.id}" value="${esc(l.account)}"></label>
         <label>Profiel<select data-lotfield="deelnemerId" data-id="${l.id}"><option value="">– nog niet gekoppeld –</option>${S.deelnemers.map(x => `<option value="${x.id}" ${x.id === l.deelnemerId ? 'selected' : ''}>${esc(label(x))}</option>`).join('')}</select></label>
-        <label>Actie<select data-lotfield="actieId" data-id="${l.id}">${S.acties.map(x => `<option value="${x.id}" ${x.id === l.actieId ? 'selected' : ''}>${esc(x.loterij)} – ${esc(x.naam)}</option>`).join('')}</select></label>
+        <label>Actie<select data-lotfield="actieId" data-id="${l.id}"><option value="">– geen actie –</option>${S.acties.map(x => `<option value="${x.id}" ${x.id === l.actieId ? 'selected' : ''}>${esc(x.loterij)} – ${esc(x.naam)}</option>`).join('')}</select></label>
+        ${a.id ? '' : `<label>Loterij<select data-lotfield="loterij" data-id="${l.id}">${LOTERIJEN.map(x => `<option ${x === l.loterij ? 'selected' : ''}>${x}</option>`).join('')}</select></label>`}
         <label>Soort lot<input list="varianten" data-lotfield="variant" data-id="${l.id}" value="${esc(l.variant)}" placeholder="bijv. Premium"></label>
         <label>Prijs per trekking (€)<input inputmode="decimal" data-lotfield="prijs" data-id="${l.id}" value="${esc(l.prijs)}"></label>
         <label class="cb" style="align-self:end"><input type="checkbox" data-toggle="houden" data-id="${l.id}" ${l.houden ? 'checked' : ''}> vast lot (niet opzeggen)</label>
@@ -1014,7 +1016,7 @@ const ACTIONS = {
       const a = act(l.actieId) || {}, d = dn(l.deelnemerId) || {};
       return ['BEGIN:VEVENT', `UID:${l.id}@loterijtracker`, `DTSTAMP:${stamp}`,
         `DTSTART;VALUE=DATE:${l.deadline.replace(/-/g, '')}`, `DTEND;VALUE=DATE:${addDays(l.deadline, 1).replace(/-/g, '')}`,
-        `SUMMARY:${icsEsc(`Opzeggen ${a.loterij}: ${d.id ? label(d) : l.kenmerk || 'lot'}`)}`,
+        `SUMMARY:${icsEsc(`Opzeggen ${lotLoterij(l)}: ${d.id ? label(d) : l.kenmerk || 'lot'}`)}`,
         `DESCRIPTION:${icsEsc(`Actie: ${a.naam}\nDeelnemer: ${naamVol(d)}\nIBAN: ${fmtIban(d.iban)}${l.kenmerk ? '\nLotnummer: ' + l.kenmerk : ''}`)}`,
         'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:Lot opzeggen', 'TRIGGER:PT9H', 'END:VALARM', 'END:VEVENT'].join('\r\n');
     });
@@ -1023,7 +1025,7 @@ const ACTIONS = {
       const dag = addDays(l.onterechtOp, STORNO_DAGEN - 7), a = act(l.actieId) || {};
       ev.push(['BEGIN:VEVENT', `UID:${l.id}-storno@loterijtracker`, `DTSTAMP:${stamp}`,
         `DTSTART;VALUE=DATE:${dag.replace(/-/g, '')}`, `DTEND;VALUE=DATE:${addDays(dag, 1).replace(/-/g, '')}`,
-        `SUMMARY:${icsEsc(`Terugboeken ${a.loterij}: ${l.kenmerk || ''}`)}`,
+        `SUMMARY:${icsEsc(`Terugboeken ${lotLoterij(l)}: ${l.kenmerk || ''}`)}`,
         `DESCRIPTION:${icsEsc(`Afgeschreven op ${fmt(l.onterechtOp)}${l.onterechtBedrag ? ' (€ ' + l.onterechtBedrag + ')' : ''}. Terugboeken kan t/m ${fmt(addDays(l.onterechtOp, STORNO_DAGEN))}.`)}`,
         'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:Incasso terugboeken', 'TRIGGER:PT9H', 'END:VALARM', 'END:VEVENT'].join('\r\n'));
     });
@@ -1034,7 +1036,7 @@ const ACTIONS = {
     const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
     const rows = S.loten.map(l => {
       const a = act(l.actieId) || {}, d = dn(l.deelnemerId) || {};
-      return [a.loterij, a.naam, a.type, l.deelnemerId ? label(d) : '', fmtIban(d.iban), l.status, fmt(l.aangemeldOp), fmt(l.deadline), fmt(l.opgezegdOp),
+      return [lotLoterij(l), a.naam || '(geen actie)', a.type, l.deelnemerId ? label(d) : '', fmtIban(d.iban), l.status, fmt(l.aangemeldOp), fmt(l.deadline), fmt(l.opgezegdOp),
         l.speeltVanaf ? fmtMaand(l.speeltVanaf) : '', l.laatsteSpeelmaand ? fmtMaand(l.laatsteSpeelmaand) : '', l.inlegBetaald ? 'ja' : '', l.cadeauOntvangen ? 'ja' : '', l.kenmerk, l.account,
         l.variant, l.prijs, l.houden ? 'ja' : '', l.opzegWijze, l.opzegReferentie, l.opzegBevestigd ? 'ja' : '', l.onterechtOp ? fmt(l.onterechtOp) : '', l.onterechtBedrag, l.teruggeboekt ? 'ja' : '', l.notitie].map(q).join(';');
     });
@@ -1109,6 +1111,8 @@ document.addEventListener('change', e => {
     save(); render();
   } else if (t.dataset.lotfield) {
     const l = lot(t.dataset.id), f = t.dataset.lotfield;
+    // zonder actie onthoudt het lot zelf bij welke loterij het hoort
+    if (f === 'actieId') l.loterij = act(t.value)?.loterij || lotLoterij(l);
     l[f] = t.value.trim() || (t.type === 'date' || t.type === 'month' || f === 'deelnemerId' ? null : '');
     if (f === 'aangemeldOp' && t.value) l.deadline = addDays(t.value, act(l.actieId)?.opzegNaDagen);
     save(); render();
@@ -1184,8 +1188,8 @@ document.addEventListener('submit', e => {
   } else if (f.id === 'opb-form') {
     const id = f.dataset.id;
     // een gekozen lot bepaalt actie en loterij
-    if (fd.lotId && lot(fd.lotId)) fd.actieId = lot(fd.lotId).actieId;
-    if (fd.actieId) fd.loterij = act(fd.actieId)?.loterij || fd.loterij;
+    if (fd.lotId && lot(fd.lotId)) { fd.actieId = lot(fd.lotId).actieId || ''; fd.loterij = lotLoterij(lot(fd.lotId)) || fd.loterij; }
+    else if (fd.actieId) fd.loterij = act(fd.actieId)?.loterij || fd.loterij;
     if (fd.status === 'verkocht' && !fd.verkochtOp) fd.verkochtOp = today();
     if (!fd.kansspelbelasting && ksbVoorstel(fd)) {
       fd.kansspelbelasting = String(ksbVoorstel(fd)).replace('.', ',');
