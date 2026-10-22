@@ -198,8 +198,11 @@ function num(v) {
 }
 const eur = n => n.toLocaleString('nl-NL', { style: 'currency', currency: 'EUR' });
 const opbLoterij = o => act(o.actieId)?.loterij || o.loterij || 'Onbekend';
-// opbrengst van één item: verkoopprijs als het verkocht is, anders de geschatte waarde, min eventuele kosten
-const opbBruto = o => o.status === 'verkocht' ? num(o.verkochtVoor) : num(o.waarde);
+// kansspelbelasting op prijzen boven de vrijgestelde som (2026: 37,8% over de hele prijs)
+const KSB_TARIEF = 0.378, KSB_VRIJ = 449;
+const ksbVoorstel = o => o.soort === 'geld' && num(o.waarde) > KSB_VRIJ ? Math.round(num(o.waarde) * KSB_TARIEF * 100) / 100 : 0;
+// opbrengst van één item: verkoopprijs als het verkocht is, anders de geschatte waarde min ingehouden kansspelbelasting
+const opbBruto = o => o.status === 'verkocht' ? num(o.verkochtVoor) : num(o.waarde) - num(o.kansspelbelasting);
 const opbNetto = o => opbBruto(o) - num(o.kosten);
 // kosten van een lot: betaalde inleg plus afschrijvingen na opzegging die (nog) niet zijn teruggeboekt
 const lotKosten = l => (l.inlegBetaald ? num(act(l.actieId)?.inleg) : 0) + (l.onterechtOp && !l.teruggeboekt ? num(l.onterechtBedrag) : 0);
@@ -600,7 +603,7 @@ function opbCard(o) {
   }
   return `<div class="card"><div class="row">
     <div class="grow"><b>${esc(o.omschrijving) || '(geen omschrijving)'}</b>
-      <div class="small muted">${SOORTEN[o.soort] || ''} · ${esc(opbLoterij(o))}${a ? ' – ' + esc(a.naam) : ''} · ${fmt(o.datum)}${l ? ` · lot ${esc(l.kenmerk)}${l.account ? ' · 👤 ' + esc(l.account) : ''}` : ''}</div></div>
+      <div class="small muted">${SOORTEN[o.soort] || ''} · ${esc(opbLoterij(o))}${a ? ' – ' + esc(a.naam) : ''} · ${fmt(o.datum)}${l ? ` · lot ${esc(l.kenmerk)}${l.account ? ' · 👤 ' + esc(l.account) : ''}` : ''}${num(o.kansspelbelasting) ? ` · ${eur(num(o.waarde))} min ${eur(num(o.kansspelbelasting))} kansspelbelasting` : ''}</div></div>
     ${geldig}<span class="chip ${st}">${OSTATUS[o.status] || o.status}</span>
     <b>${eur(opbNetto(o))}</b>
     <a class="btn" href="#/opbrengst/${o.id}">Bewerken</a>
@@ -611,8 +614,9 @@ function vOpbrengsten() {
   const os = [...S.opbrengsten].sort((a, b) => (b.datum || '').localeCompare(a.datum || ''));
   const som = (lijst, f) => lijst.reduce((s, o) => s + f(o), 0);
   const verkocht = som(os.filter(o => o.status === 'verkocht'), o => num(o.verkochtVoor));
-  const inBezit = som(os.filter(o => o.status === 'bewaard' || o.status === 'te-koop'), o => num(o.waarde));
-  const gebruikt = som(os.filter(o => o.status === 'gebruikt'), o => num(o.waarde));
+  const inBezit = som(os.filter(o => o.status === 'bewaard' || o.status === 'te-koop'), opbBruto);
+  const gebruikt = som(os.filter(o => o.status === 'gebruikt'), opbBruto);
+  const ksb = som(os, o => num(o.kansspelbelasting));
   const kosten = inlegKosten(S.loten) + som(os, o => num(o.kosten));
   const netto = verkocht + inBezit + gebruikt - kosten;
 
@@ -623,6 +627,7 @@ function vOpbrengsten() {
     <div class="tile"><b>${eur(gebruikt)}</b><span>zelf gebruikt / geld</span></div>
     <div class="tile"><b>${eur(inBezit)}</b><span>nog in bezit (geschat)</span></div>
     <div class="tile ${kosten ? 'bad' : ''}"><b>${eur(kosten)}</b><span>kosten (inleg e.d.)</span></div>
+    ${ksb ? `<div class="tile"><b>${eur(ksb)}</b><span>kansspelbelasting ingehouden (al afgetrokken)</span></div>` : ''}
   </div>
   <p class="small muted">Welkomstcadeaus komen hier automatisch bij zodra je “cadeau ontvangen” aanvinkt. Prijzen en kaartjes voeg je zelf toe. Verkoop je iets, zet de status dan op “Verkocht” en vul de verkoopprijs in; dan telt die in plaats van de geschatte waarde. Inleg telt als kosten bij loten met “inleg afgeschreven”.</p>`;
 
@@ -662,6 +667,7 @@ function vOpbrengstForm(id, actieId) {
     <label class="f">Lot (optioneel)<select name="lotId"><option value="">–</option>${[...S.loten].sort((x, y) => lotLabel(x).localeCompare(lotLabel(y))).map(l => `<option value="${l.id}" ${o.lotId === l.id ? 'selected' : ''}>${esc(lotLabel(l))}</option>`).join('')}</select></label>
     <label class="f">Actie (optioneel)<select name="actieId"><option value="">–</option>${S.acties.map(a => `<option value="${a.id}" ${o.actieId === a.id ? 'selected' : ''}>${esc(a.loterij)} – ${esc(a.naam)}</option>`).join('')}</select></label>
     <label class="f">Geschatte waarde (€)<input name="waarde" inputmode="decimal" value="${esc(o.waarde)}"></label>
+    <label class="f">Kansspelbelasting ingehouden (€)<input name="kansspelbelasting" inputmode="decimal" value="${esc(o.kansspelbelasting)}" placeholder="geldprijs > € ${KSB_VRIJ}: ${KSB_TARIEF * 100}% wordt automatisch ingevuld"></label>
     <label class="f">Status<select name="status">${opt(OSTATUS, o.status)}</select></label>
     <label class="f">Verkocht voor (€)<input name="verkochtVoor" inputmode="decimal" value="${esc(o.verkochtVoor)}"></label>
     <label class="f">Verkocht op<input type="date" name="verkochtOp" value="${esc(o.verkochtOp)}"></label>
@@ -768,11 +774,11 @@ const ACTIONS = {
     download(`loterij-loten-${today()}.csv`, '﻿' + [kol.map(q).join(';'), ...rows].join('\r\n'), 'text/csv');
   },
   'csv-opb'() {
-    const kol = ['Datum', 'Omschrijving', 'Soort', 'Loterij', 'Actie', 'Lot', 'Account', 'Geschatte waarde', 'Status', 'Verkocht voor', 'Verkocht op', 'Kosten', 'Netto', 'Geldig t/m', 'Notitie'];
+    const kol = ['Datum', 'Omschrijving', 'Soort', 'Loterij', 'Actie', 'Lot', 'Account', 'Geschatte waarde', 'Kansspelbelasting', 'Status', 'Verkocht voor', 'Verkocht op', 'Kosten', 'Netto', 'Geldig t/m', 'Notitie'];
     const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
     const bedrag = n => n.toFixed(2).replace('.', ',');
     const rows = S.opbrengsten.map(o => [fmt(o.datum), o.omschrijving, SOORTEN[o.soort], opbLoterij(o), act(o.actieId)?.naam,
-      o.lotId ? lot(o.lotId)?.kenmerk : '', o.lotId ? lot(o.lotId)?.account : '', bedrag(num(o.waarde)), OSTATUS[o.status],
+      o.lotId ? lot(o.lotId)?.kenmerk : '', o.lotId ? lot(o.lotId)?.account : '', bedrag(num(o.waarde)), o.kansspelbelasting ? bedrag(num(o.kansspelbelasting)) : '', OSTATUS[o.status],
       o.verkochtVoor ? bedrag(num(o.verkochtVoor)) : '', o.verkochtOp ? fmt(o.verkochtOp) : '', o.kosten ? bedrag(num(o.kosten)) : '', bedrag(opbNetto(o)),
       o.geldigTot ? fmt(o.geldigTot) : '', o.notitie].map(q).join(';'));
     download(`loterij-opbrengsten-${today()}.csv`, '﻿' + [kol.map(q).join(';'), ...rows].join('\r\n'), 'text/csv');
@@ -892,6 +898,10 @@ document.addEventListener('submit', e => {
     if (fd.lotId && lot(fd.lotId)) fd.actieId = lot(fd.lotId).actieId;
     if (fd.actieId) fd.loterij = act(fd.actieId)?.loterij || fd.loterij;
     if (fd.status === 'verkocht' && !fd.verkochtOp) fd.verkochtOp = today();
+    if (!fd.kansspelbelasting && ksbVoorstel(fd)) {
+      fd.kansspelbelasting = String(ksbVoorstel(fd)).replace('.', ',');
+      toast(`Kansspelbelasting ingevuld: ${eur(ksbVoorstel(fd))} – controleer met je bankafschrift`);
+    }
     if (id) Object.assign(S.opbrengsten.find(o => o.id === id), fd); else S.opbrengsten.push({ id: uid(), ...fd });
     save(); history.length > 1 ? history.back() : (location.hash = '#/opbrengsten');
   } else if (f.id === 'dn-form') {
