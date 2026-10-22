@@ -236,6 +236,9 @@ function loterijVan(tekst) {
   if (/nederlandse loterij/i.test(tekst)) return 'Nederlandse Loterij';
   return 'Onbekend';
 }
+const TXSOORTEN = { inleg: 'Inleg / betaling', actie: 'Actiebeloning (geld terug)', prijs: 'Prijs / uitbetaling', overig: 'Overig' };
+// soort van een transactie: zelf gekozen, anders afgeleid uit bedrag en omschrijving
+const txSoort = t => t.soort || (t.bedrag < 0 ? 'inleg' : t.opbrengstId ? 'prijs' : /storting/i.test(t.tegenpartij + ' ' + t.memo) ? 'actie' : 'prijs');
 function hashStr(s) { let h = 5381; for (const c of s) h = (h * 33 ^ c.charCodeAt(0)) >>> 0; return h.toString(36); }
 // YNAB-export (tab- of komma-gescheiden, met aanhalingstekens) → transacties
 function parseYnab(tekst) {
@@ -747,18 +750,22 @@ function vBank(filter) {
   tx.forEach(t => { const g = (perLot[t.loterij] ||= { uit: 0, in: 0, n: 0 }); t.bedrag < 0 ? g.uit -= t.bedrag : g.in += t.bedrag; g.n++; });
   const ongekoppeld = tx.filter(t => !t.lotId).length;
   const lijst = filter === 'ongekoppeld' ? tx.filter(t => !t.lotId) : tx;
+  const perSoort = s => tx.filter(t => t.bedrag > 0 && txSoort(t) === s).reduce((a, t) => a + t.bedrag, 0);
 
   let h = `<h2>Bank</h2>
   <div class="tiles">
     <div class="tile bad"><b>${eur(bankUit)}</b><span>betaald</span></div>
     <div class="tile"><b>${eur(bankIn)}</b><span>ontvangen</span></div>
+    <div class="tile"><b>${eur(perSoort('actie'))}</b><span>waarvan actiebeloningen</span></div>
+    <div class="tile"><b>${eur(perSoort('prijs'))}</b><span>waarvan prijzen</span></div>
     <div class="tile ${bankIn - bankUit < 0 ? 'bad' : ''}"><b>${eur(bankIn - bankUit)}</b><span>saldo bank</span></div>
     <div class="tile"><b>${ongekoppeld}</b><span>niet aan een lot gekoppeld</span></div>
   </div>
   <details class="card" ${filter === 'nieuw' ? 'open' : ''}><summary>+ Transactie toevoegen</summary>
     <form id="tx-form"><div class="grid" style="margin-top:8px">
       <label class="f">Datum<input type="date" name="datum" required value="${today()}"></label>
-      <label class="f">Soort<select name="richting"><option value="uit">Betaald (afschrijving)</option><option value="in">Ontvangen (bijschrijving)</option></select></label>
+      <label class="f">Richting<select name="richting"><option value="uit">Betaald (afschrijving)</option><option value="in">Ontvangen (bijschrijving)</option></select></label>
+      <label class="f">Soort<select name="soort"><option value="">automatisch</option>${Object.entries(TXSOORTEN).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select></label>
       <label class="f">Bedrag (€)<input name="bedrag" inputmode="decimal" required></label>
       <label class="f">Rekening<input name="rekening" list="rekeningen" placeholder="bijv. ING Wiebe"><datalist id="rekeningen">${[...new Set(S.transacties.map(t => t.rekening).filter(Boolean))].map(x => `<option value="${esc(x)}">`).join('')}</datalist></label>
       <label class="f">Loterij<select name="loterij">${LOTERIJEN.map(x => `<option>${x}</option>`).join('')}</select></label>
@@ -786,12 +793,13 @@ function vBank(filter) {
     <a class="btn ${filter === 'ongekoppeld' ? '' : 'primary'}" href="#/bank">Alle (${tx.length})</a>
     <a class="btn ${filter === 'ongekoppeld' ? 'primary' : ''}" href="#/bank/ongekoppeld">Niet gekoppeld (${ongekoppeld})</a></div>
   <div class="card" style="overflow-x:auto"><table>
-    <tr><th>Datum</th><th>Rekening</th><th>Omschrijving</th><th>Loterij</th><th style="text-align:right">Bedrag</th><th>Lot</th></tr>
+    <tr><th>Datum</th><th>Rekening</th><th>Omschrijving</th><th>Loterij</th><th>Soort</th><th style="text-align:right">Bedrag</th><th>Lot</th></tr>
     ${lijst.map(t => `<tr>
       <td style="white-space:nowrap">${fmt(t.datum)}</td>
       <td class="small">${esc(t.rekening)}</td>
       <td class="small" title="${esc(t.tegenpartij)}${t.memo ? ' – ' + esc(t.memo) : ''}" style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t.tegenpartij)}</td>
       <td><select data-txfield="loterij" data-id="${t.id}">${[...LOTERIJEN, 'Onbekend'].map(x => `<option ${x === t.loterij ? 'selected' : ''}>${x}</option>`).join('')}</select></td>
+      <td><select data-txfield="soort" data-id="${t.id}">${Object.entries(TXSOORTEN).map(([k, v]) => `<option value="${k}" ${k === txSoort(t) ? 'selected' : ''}>${v}</option>`).join('')}</select></td>
       <td style="text-align:right;white-space:nowrap;color:${t.bedrag < 0 ? 'var(--bad)' : 'var(--ok)'}"><b>${eur(t.bedrag)}</b></td>
       <td><select data-txfield="lotId" data-id="${t.id}"><option value="">–</option>${lotOpties(t)}</select>
         ${t.bedrag > 0 ? `<select data-txfield="opbrengstId" data-id="${t.id}" title="Is dit de uitbetaling van een geldprijs?"><option value="">geen geldprijs</option>${prijsOpties(t)}</select>` : ''}</td>
@@ -1046,7 +1054,7 @@ document.addEventListener('submit', e => {
     if (!bedrag) return toast('Vul een bedrag in');
     const l = lot(fd.lotId);
     const t = { id: 'tx-' + uid(), datum: fd.datum, rekening: fd.rekening.trim(), tegenpartij: fd.tegenpartij.trim() || fd.loterij, memo: '', bedrag,
-      loterij: l ? lotLoterij(l) : fd.loterij, lotId: fd.lotId, opbrengstId: '' };
+      loterij: l ? lotLoterij(l) : fd.loterij, lotId: fd.lotId, opbrengstId: '', soort: fd.soort };
     S.transacties.push(t);
     if (!t.lotId) autoKoppel(t); // lotnummer in de omschrijving herkennen
     save(); render(); toast('Transactie toegevoegd');
