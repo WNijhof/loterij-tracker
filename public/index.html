@@ -740,6 +740,7 @@ function vDeelnemers() {
   const groepen = {};
   S.deelnemers.forEach(d => { (groepen[normIban(d.iban)] ||= []).push(d); });
   let h = `<div class="row" style="margin-bottom:12px"><h2 class="grow" style="margin:0">Deelnemers</h2><a class="btn primary" href="#/deelnemer/nieuw">+ Nieuwe deelnemer</a></div>
+    ${accountsKaart()}
     <p class="muted small">Een deelnemer = één set gegevens met één IBAN. Per IBAN mag je 2× per actie meedoen, dus maak per IBAN maximaal 2 deelnemers aan (bijv. jij en je partner). Gebruik “Kopiëren” om snel een deelnemer met hetzelfde adres en een ander IBAN te maken.</p>`;
   if (!S.deelnemers.length) return h + '<div class="empty">Nog geen deelnemers.</div>';
   return h + Object.entries(groepen).map(([iban, ds]) => `<div class="card">
@@ -754,6 +755,20 @@ function vDeelnemers() {
         }).join('')}</td>
       <td style="text-align:right;white-space:nowrap"><a class="btn" href="#/deelnemer/${d.id}">Bewerken</a> <button data-act="dn-dup" data-id="${d.id}">Kopiëren</button> <button class="danger" data-act="dn-del" data-id="${d.id}">×</button></td></tr>`).join('')}</table>
   </div>`).join('');
+}
+
+// accounts waarmee je inlogt bij de loterijen; hernoemen past alle loten in één keer aan
+function accountsKaart() {
+  const accs = [...new Set(S.loten.map(l => l.account).filter(Boolean))].sort();
+  if (!accs.length) return '';
+  return `<div class="card"><b>Loterij-accounts</b>
+    <p class="small muted" style="margin:4px 0 8px">De inlog bij de loterij waar een lot onder valt. Pas de naam aan en klik buiten het veld; alle loten van dat account worden bijgewerkt.</p>
+    <table><tr><th>Naam</th><th>Loten</th><th>Actief</th></tr>
+    ${accs.map(a => {
+      const ls = S.loten.filter(l => l.account === a);
+      return `<tr><td><input data-acc-rename="${esc(a)}" value="${esc(a)}" style="max-width:260px"></td>
+        <td>${ls.length}</td><td>${ls.filter(l => l.status === 'aangemeld').length}</td></tr>`;
+    }).join('')}</table></div>`;
 }
 
 function vDeelnemerForm(id) {
@@ -1097,6 +1112,12 @@ document.addEventListener('change', e => {
     l[f] = t.value.trim() || (t.type === 'date' || t.type === 'month' || f === 'deelnemerId' ? null : '');
     if (f === 'aangemeldOp' && t.value) l.deadline = addDays(t.value, act(l.actieId)?.opzegNaDagen);
     save(); render();
+  } else if (t.dataset.accRename !== undefined) {
+    const oud = t.dataset.accRename, nieuw = t.value.trim();
+    if (!nieuw || nieuw === oud) { t.value = oud; return; }
+    let n = 0;
+    S.loten.forEach(l => { if (l.account === oud) { l.account = nieuw; n++; } });
+    save(); render(); toast(`${plural(n, 'lot', 'loten')} verplaatst naar account “${nieuw}”`);
   } else if (t.dataset.txfield) {
     const tx = S.transacties.find(x => x.id === t.dataset.id), f = t.dataset.txfield;
     tx[f] = t.value;
