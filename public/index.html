@@ -258,11 +258,12 @@ function lotCard(l, { toonActie = false } = {}) {
     status = `<span class="chip ok">opgezegd${l.opgezegdOp ? ' ' + fmt(l.opgezegdOp) : ''}</span>`;
   }
   // speelperiode: wanneer begint het lot en wat is de laatste maand dat het meespeelt
-  if (l.laatsteSpeelmaand) {
-    const voorbij = l.laatsteSpeelmaand < ditJaarMaand();
-    status += ` <span class="chip ${voorbij ? '' : 'acc'}">${voorbij ? 'speelde t/m' : 'speelt t/m'} ${fmtMaand(l.laatsteSpeelmaand)}</span>`;
-  } else if (l.speeltVanaf && l.speeltVanaf > ditJaarMaand()) {
-    status += ` <span class="chip">speelt vanaf ${fmtMaand(l.speeltVanaf)}</span>`;
+  if (l.speeltVanaf || l.laatsteSpeelmaand) {
+    const nu = ditJaarMaand();
+    const t = l.speeltVanaf && l.speeltVanaf > nu ? `speelt vanaf ${fmtMaand(l.speeltVanaf)}`
+      : `speelt ${l.speeltVanaf ? fmtMaand(l.speeltVanaf) : '?'} – ${l.laatsteSpeelmaand ? fmtMaand(l.laatsteSpeelmaand) : 'nu'}`;
+    const actief = !l.laatsteSpeelmaand || l.laatsteSpeelmaand >= nu;
+    status += ` <span class="chip ${actief ? 'acc' : ''}">${t}</span>`;
   }
   let cadeau = '';
   if (a.type === 'cadeau' && l.status !== 'te-melden') {
