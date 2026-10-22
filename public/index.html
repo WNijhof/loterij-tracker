@@ -763,7 +763,7 @@ function vBank(filter) {
       <label class="f">Rekening<input name="rekening" list="rekeningen" placeholder="bijv. ING Wiebe"><datalist id="rekeningen">${[...new Set(S.transacties.map(t => t.rekening).filter(Boolean))].map(x => `<option value="${esc(x)}">`).join('')}</datalist></label>
       <label class="f">Loterij<select name="loterij">${LOTERIJEN.map(x => `<option>${x}</option>`).join('')}</select></label>
       <label class="f">Lot<select name="lotId"><option value="">–</option>${[...S.loten].sort((x, y) => lotLabel(x).localeCompare(lotLabel(y))).map(l => `<option value="${l.id}">${esc(lotLabel(l))}</option>`).join('')}</select></label>
-      <label class="f" style="grid-column:1/-1">Omschrijving (zoals in je bank-app)<input name="tegenpartij" placeholder="bijv. VriendenLoterij 09623-AA november"></label>
+      <label class="f" style="grid-column:1/-1">Omschrijving (zoals in je bank-app)<input name="tegenpartij" placeholder="bijv. VriendenLoterij 12345-AB november"></label>
     </div><div class="actions"><button class="primary" type="submit">Toevoegen</button></div></form>
   </details>
   <details class="card"><summary>Transacties importeren uit YNAB</summary>
