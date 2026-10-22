@@ -457,6 +457,8 @@ function lotCard(l, { inActie = false } = {}) {
     ${meta ? `<div class="lot-meta">${meta}</div>` : ''}
     ${knoppen ? `<div class="lot-actions">${knoppen}</div>` : ''}
     ${l.status === 'te-melden' ? kopie : ''}
+    ${!l.deelnemerId && profielVoorstellen(l).length ? `<div class="lot-actions small">💡 Profiel: ${profielVoorstellen(l).map(v =>
+      `<button data-act="dn-koppel" data-id="${l.id}" data-dn="${v.id}">${esc(label(v))}</button>`).join(' ')}<span class="muted">IBAN eindigt op ${ibanSleutel(l)}</span></div>` : ''}
     <details data-lot="${l.id}" ${openLots.has(l.id) ? 'open' : ''}>
       <summary>${l.status === 'te-melden' ? 'Details' : 'Details & bewerken'}</summary>
       <div class="edit">
@@ -490,6 +492,23 @@ function lotCard(l, { inActie = false } = {}) {
   </div>`;
 }
 
+// VriendenLoterij-lotnummers beginnen met de laatste 5 cijfers van het IBAN (12345-AB)
+const ibanSleutel = l => lotLoterij(l) === 'VriendenLoterij' ? (l.kenmerk || '').match(/^(\d{5})-[A-Z]{2}$/)?.[1] : null;
+function profielVoorstellen(l) {
+  const k = ibanSleutel(l);
+  return k ? S.deelnemers.filter(d => normIban(d.iban).endsWith(k)) : [];
+}
+// alle ongekoppelde loten met precies één passend profiel koppelen
+function profielenKoppelen() {
+  let gekoppeld = 0, twijfel = 0;
+  for (const l of S.loten) {
+    if (l.deelnemerId) continue;
+    const v = profielVoorstellen(l);
+    if (v.length === 1) { l.deelnemerId = v[0].id; gekoppeld++; } else if (v.length > 1) twijfel++;
+  }
+  return { gekoppeld, twijfel };
+}
+
 const lotGrid = lijst => `<div class="lotgrid">${lijst.map(l => lotCard(l)).join('')}</div>`;
 
 // volgorde: eerst wat aandacht nodig heeft
@@ -516,6 +535,9 @@ function vLoten(filter = 'open', loterij = 'alle') {
   let h = `<h2>Loten</h2>
   <div class="filters">${Object.entries(LOTFILTERS).map(([k, t]) => `<a href="#/loten/${k}/${encodeURIComponent(loterij)}" class="${k === filter ? 'on' : ''}">${t} (${tel(k)})</a>`).join('')}</div>
   <div class="filters">${['alle', ...loterijen].map(x => `<a href="#/loten/${filter}/${encodeURIComponent(x)}" class="${x === loterij ? 'on' : ''}">${x === 'alle' ? 'Alle loterijen' : esc(x)}</a>`).join('')}</div>`;
+  const koppelbaar = S.loten.filter(l => !l.deelnemerId && profielVoorstellen(l).length === 1).length;
+  if (koppelbaar) h += `<div class="notice info row"><span class="grow">💡 ${plural(koppelbaar, 'lot kan', 'loten kunnen')} automatisch aan een profiel gekoppeld worden: het lotnummer begint met de laatste cijfers van het IBAN.</span>
+    <button class="primary" data-act="dn-auto">Koppelen</button></div>`;
   if (!lijst.length) return h + '<div class="empty">Geen loten in deze selectie.</div>';
   const groepen = {};
   lijst.forEach(l => (groepen[lotLoterij(l) || 'Onbekend'] ||= []).push(l));
@@ -957,6 +979,8 @@ function vBackup() {
     <button class="primary" data-act="export">Backup downloaden (.json)</button></div>
   <div class="card"><b>Backup terugzetten</b><p class="small muted">Let op: dit vervangt alle huidige gegevens.</p>
     <input type="file" id="import" accept=".json,application/json"></div>
+  <div class="card"><b>Profielen toevoegen uit een backup</b><p class="small muted">Voegt alleen de deelnemers/profielen uit een backupbestand toe die hier nog niet staan. Loten, acties en al het andere blijven ongemoeid.</p>
+    <input type="file" id="import-dn" accept=".json,application/json"></div>
   <div class="card"><b>Statusupdate importeren</b><p class="small muted">Bestand met alleen lot-statussen en lotnummers (zonder persoonsgegevens), bijv. van Claude na het aanmelden of opzeggen. Je bestaande gegevens blijven gewoon staan.</p>
     <input type="file" id="import-update" accept=".json,application/json"></div>
   <div class="card"><b>Herinneringen in je agenda</b><p class="small muted">Download een agendabestand met een herinnering (om 09:00) op de opzegdatum van elk openstaand lot. Openen in Outlook/Google Agenda/iPhone. Importeer opnieuw na nieuwe aanmeldingen; bestaande afspraken worden bijgewerkt.</p>
@@ -1052,6 +1076,12 @@ const ACTIONS = {
       o.geldigTot ? fmt(o.geldigTot) : '', o.notitie].map(q).join(';'));
     download(`loterij-opbrengsten-${today()}.csv`, '﻿' + [kol.map(q).join(';'), ...rows].join('\r\n'), 'text/csv');
   },
+  'dn-koppel'(id, b) { lot(id).deelnemerId = b.dataset.dn; save(); render(); toast('Profiel gekoppeld'); },
+  'dn-auto'() {
+    const { gekoppeld, twijfel } = profielenKoppelen();
+    save(); render();
+    toast(`${plural(gekoppeld, 'lot', 'loten')} gekoppeld${twijfel ? ` · ${twijfel} met meerdere passende profielen, kies zelf` : ''}`);
+  },
   'ynab-import'() {
     let nieuw;
     try { nieuw = parseYnab($('#ynab').value); }
@@ -1136,6 +1166,20 @@ document.addEventListener('change', e => {
         if (!Array.isArray(data.loten) || !Array.isArray(data.deelnemers)) throw 0;
         if (!confirm(`Backup bevat ${data.deelnemers.length} deelnemers, ${data.acties.length} acties en ${data.loten.length} loten. Huidige gegevens vervangen?`)) return;
         S = normalize(data); save(); location.hash = '#/overzicht'; render(); toast('Backup teruggezet');
+      } catch (err) { alert('Dit is geen geldig backupbestand.'); }
+    };
+    r.readAsText(t.files[0]);
+  } else if (t.id === 'import-dn' && t.files[0]) {
+    const r = new FileReader();
+    r.onload = () => {
+      try {
+        const data = JSON.parse(r.result);
+        if (!Array.isArray(data.deelnemers)) throw 0;
+        const nieuw = data.deelnemers.filter(d => d.id && !dn(d.id));
+        S.deelnemers.push(...nieuw);
+        const { gekoppeld } = profielenKoppelen();
+        save(); render();
+        toast(`${plural(nieuw.length, 'profiel', 'profielen')} toegevoegd${gekoppeld ? ` · ${plural(gekoppeld, 'lot', 'loten')} automatisch gekoppeld` : ''}`);
       } catch (err) { alert('Dit is geen geldig backupbestand.'); }
     };
     r.readAsText(t.files[0]);
