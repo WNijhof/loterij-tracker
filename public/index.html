@@ -174,6 +174,9 @@ function parseIso(iso) { const [y, m, d] = iso.split('-').map(Number); return ne
 function addDays(iso, n) { const d = parseIso(iso); d.setDate(d.getDate() + Number(n || 0)); return isoOf(d); }
 function diffDays(iso) { const t = new Date(); t.setHours(0, 0, 0, 0); return Math.round((parseIso(iso) - t) / 864e5); }
 function fmt(iso) { if (!iso) return '–'; const [y, m, d] = iso.split('-'); return `${d}-${m}-${y}`; }
+const MAANDEN = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
+function fmtMaand(ym) { if (!ym) return '–'; const [y, m] = ym.split('-'); return `${MAANDEN[m - 1]} ${y}`; }
+const ditJaarMaand = () => today().slice(0, 7);
 const normIban = s => String(s || '').replace(/\s+/g, '').toUpperCase();
 const fmtIban = s => normIban(s).replace(/(.{4})/g, '$1 ').trim();
 function ibanOk(s) {
@@ -252,16 +255,24 @@ function lotCard(l, { toonActie = false } = {}) {
     status = deadlineChip(l.deadline);
     knoppen = `<button class="primary" data-act="opgezegd" data-id="${l.id}">Opgezegd ✓</button>`;
   } else {
-    status = `<span class="chip ok">opgezegd ${fmt(l.opgezegdOp)}</span>`;
+    status = `<span class="chip ok">opgezegd${l.opgezegdOp ? ' ' + fmt(l.opgezegdOp) : ''}</span>`;
+  }
+  // speelperiode: wanneer begint het lot en wat is de laatste maand dat het meespeelt
+  if (l.laatsteSpeelmaand) {
+    const voorbij = l.laatsteSpeelmaand < ditJaarMaand();
+    status += ` <span class="chip ${voorbij ? '' : 'acc'}">${voorbij ? 'speelde t/m' : 'speelt t/m'} ${fmtMaand(l.laatsteSpeelmaand)}</span>`;
+  } else if (l.speeltVanaf && l.speeltVanaf > ditJaarMaand()) {
+    status += ` <span class="chip">speelt vanaf ${fmtMaand(l.speeltVanaf)}</span>`;
   }
   let cadeau = '';
   if (a.type === 'cadeau' && l.status !== 'te-melden') {
     cadeau = `<label class="cb"><input type="checkbox" data-toggle="inlegBetaald" data-id="${l.id}" ${l.inlegBetaald ? 'checked' : ''}> inleg afgeschreven</label>
       <label class="cb"><input type="checkbox" data-toggle="cadeauOntvangen" data-id="${l.id}" ${l.cadeauOntvangen ? 'checked' : ''}> cadeau ontvangen</label>`;
   }
+  const geenDn = `<i>${l.deelnemerId ? 'verwijderde deelnemer' : 'nog niet gekoppeld'}</i>`;
   const titel = toonActie
-    ? `<a href="#/actie/${a.id}"><b>${esc(a.loterij)}</b> – ${esc(a.naam)}</a><div class="small muted">${d ? esc(label(d)) + ' · <span class="mono">' + fmtIban(d.iban) + '</span>' : '<i>verwijderde deelnemer</i>'}${l.kenmerk ? ' · ' + esc(l.kenmerk) : ''}</div>`
-    : `<b>${d ? esc(label(d)) : '<i>verwijderde deelnemer</i>'}</b><div class="small muted mono">${d ? fmtIban(d.iban) : ''}${l.kenmerk ? ' · ' + esc(l.kenmerk) : ''}</div>`;
+    ? `<a href="#/actie/${a.id}"><b>${esc(a.loterij)}</b> – ${esc(a.naam)}</a><div class="small muted">${d ? esc(label(d)) + ' · <span class="mono">' + fmtIban(d.iban) + '</span>' : geenDn}${l.kenmerk ? ' · ' + esc(l.kenmerk) : ''}</div>`
+    : `<b>${d ? esc(label(d)) : geenDn}</b><div class="small muted mono">${d ? fmtIban(d.iban) : ''}${l.kenmerk ? (d ? ' · ' : '') + esc(l.kenmerk) : ''}</div>`;
 
   const kopie = d ? copyFields(d).map(([k, v]) =>
     `<button class="cp" data-act="copy" data-v="${esc(v)}" title="Klik om te kopiëren"><span>${k}</span><b>${esc(v) || '–'}</b></button>`).join('') : '';
@@ -275,7 +286,11 @@ function lotCard(l, { toonActie = false } = {}) {
         <label>Aangemeld op<input type="date" data-lotfield="aangemeldOp" data-id="${l.id}" value="${l.aangemeldOp || ''}"></label>
         <label>Opzeggen vóór<input type="date" data-lotfield="deadline" data-id="${l.id}" value="${l.deadline || ''}"></label>
         <label>Opgezegd op<input type="date" data-lotfield="opgezegdOp" data-id="${l.id}" value="${l.opgezegdOp || ''}"></label>
+        <label>Speelt mee vanaf<input type="month" data-lotfield="speeltVanaf" data-id="${l.id}" value="${l.speeltVanaf || ''}"></label>
+        <label>Laatste speelmaand<input type="month" data-lotfield="laatsteSpeelmaand" data-id="${l.id}" value="${l.laatsteSpeelmaand || ''}"></label>
         <label>Lot-/klantnummer<input data-lotfield="kenmerk" data-id="${l.id}" value="${esc(l.kenmerk)}"></label>
+        <label>Profiel<select data-lotfield="deelnemerId" data-id="${l.id}"><option value="">– nog niet gekoppeld –</option>${S.deelnemers.map(x => `<option value="${x.id}" ${x.id === l.deelnemerId ? 'selected' : ''}>${esc(label(x))}</option>`).join('')}</select></label>
+        <label>Actie<select data-lotfield="actieId" data-id="${l.id}">${S.acties.map(x => `<option value="${x.id}" ${x.id === l.actieId ? 'selected' : ''}>${esc(x.loterij)} – ${esc(x.naam)}</option>`).join('')}</select></label>
         <label style="grid-column:1/-1">Notitie<input data-lotfield="notitie" data-id="${l.id}" value="${esc(l.notitie)}"></label>
       </div>
       <div class="actions">
@@ -615,12 +630,12 @@ const ACTIONS = {
     download('loterij-opzeggen.ics', ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Loterij Tracker//NL', ...ev, 'END:VCALENDAR'].join('\r\n'), 'text/calendar');
   },
   csv() {
-    const kol = ['Loterij', 'Actie', 'Soort', 'Deelnemer', 'IBAN', 'Status', 'Aangemeld op', 'Opzeggen voor', 'Opgezegd op', 'Inleg afgeschreven', 'Cadeau ontvangen', 'Lotnummer', 'Notitie'];
+    const kol = ['Loterij', 'Actie', 'Soort', 'Deelnemer', 'IBAN', 'Status', 'Aangemeld op', 'Opzeggen voor', 'Opgezegd op', 'Speelt vanaf', 'Laatste speelmaand', 'Inleg afgeschreven', 'Cadeau ontvangen', 'Lotnummer', 'Notitie'];
     const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
     const rows = S.loten.map(l => {
       const a = act(l.actieId) || {}, d = dn(l.deelnemerId) || {};
-      return [a.loterij, a.naam, a.type, label(d), fmtIban(d.iban), l.status, fmt(l.aangemeldOp), fmt(l.deadline), fmt(l.opgezegdOp),
-        l.inlegBetaald ? 'ja' : '', l.cadeauOntvangen ? 'ja' : '', l.kenmerk, l.notitie].map(q).join(';');
+      return [a.loterij, a.naam, a.type, l.deelnemerId ? label(d) : '', fmtIban(d.iban), l.status, fmt(l.aangemeldOp), fmt(l.deadline), fmt(l.opgezegdOp),
+        l.speeltVanaf ? fmtMaand(l.speeltVanaf) : '', l.laatsteSpeelmaand ? fmtMaand(l.laatsteSpeelmaand) : '', l.inlegBetaald ? 'ja' : '', l.cadeauOntvangen ? 'ja' : '', l.kenmerk, l.notitie].map(q).join(';');
     });
     download(`loterij-loten-${today()}.csv`, '﻿' + [kol.map(q).join(';'), ...rows].join('\r\n'), 'text/csv');
   },
@@ -707,7 +722,7 @@ document.addEventListener('change', e => {
           if (!lot(u.id) && u.actieId && act(u.actieId)) S.loten.push({ ...nieuwLot(u.actieId, u.deelnemerId), id: u.id });
           const l = lot(u.id);
           if (!l) { mis++; return; }
-          ['status', 'aangemeldOp', 'deadline', 'opgezegdOp', 'kenmerk', 'notitie', 'inlegBetaald', 'cadeauOntvangen']
+          ['status', 'aangemeldOp', 'deadline', 'opgezegdOp', 'speeltVanaf', 'laatsteSpeelmaand', 'kenmerk', 'notitie', 'inlegBetaald', 'cadeauOntvangen']
             .forEach(k => { if (u[k] !== undefined) l[k] = u[k]; });
           if (u.aangemeldOp && !u.deadline) l.deadline = addDays(u.aangemeldOp, act(l.actieId)?.opzegNaDagen);
           n++;
