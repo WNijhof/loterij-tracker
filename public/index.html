@@ -270,6 +270,7 @@ function lotCard(l, { toonActie = false } = {}) {
     cadeau = `<label class="cb"><input type="checkbox" data-toggle="inlegBetaald" data-id="${l.id}" ${l.inlegBetaald ? 'checked' : ''}> inleg afgeschreven</label>
       <label class="cb"><input type="checkbox" data-toggle="cadeauOntvangen" data-id="${l.id}" ${l.cadeauOntvangen ? 'checked' : ''}> cadeau ontvangen</label>`;
   }
+  if (l.account) status = `<span class="chip" title="Account waarmee je inlogt bij de loterij">👤 ${esc(l.account)}</span> ` + status;
   const geenDn = `<i>${l.deelnemerId ? 'verwijderde deelnemer' : 'nog niet gekoppeld'}</i>`;
   const titel = toonActie
     ? `<a href="#/actie/${a.id}"><b>${esc(a.loterij)}</b> – ${esc(a.naam)}</a><div class="small muted">${d ? esc(label(d)) + ' · <span class="mono">' + fmtIban(d.iban) + '</span>' : geenDn}${l.kenmerk ? ' · ' + esc(l.kenmerk) : ''}</div>`
@@ -290,6 +291,7 @@ function lotCard(l, { toonActie = false } = {}) {
         <label>Speelt mee vanaf<input type="month" data-lotfield="speeltVanaf" data-id="${l.id}" value="${l.speeltVanaf || ''}"></label>
         <label>Laatste speelmaand<input type="month" data-lotfield="laatsteSpeelmaand" data-id="${l.id}" value="${l.laatsteSpeelmaand || ''}"></label>
         <label>Lot-/klantnummer<input data-lotfield="kenmerk" data-id="${l.id}" value="${esc(l.kenmerk)}"></label>
+        <label>Account (inlog bij loterij)<input list="accounts" data-lotfield="account" data-id="${l.id}" value="${esc(l.account)}"></label>
         <label>Profiel<select data-lotfield="deelnemerId" data-id="${l.id}"><option value="">– nog niet gekoppeld –</option>${S.deelnemers.map(x => `<option value="${x.id}" ${x.id === l.deelnemerId ? 'selected' : ''}>${esc(label(x))}</option>`).join('')}</select></label>
         <label>Actie<select data-lotfield="actieId" data-id="${l.id}">${S.acties.map(x => `<option value="${x.id}" ${x.id === l.actieId ? 'selected' : ''}>${esc(x.loterij)} – ${esc(x.naam)}</option>`).join('')}</select></label>
         <label style="grid-column:1/-1">Notitie<input data-lotfield="notitie" data-id="${l.id}" value="${esc(l.notitie)}"></label>
@@ -408,6 +410,7 @@ function vActie(id) {
     ${a.notities ? `<div class="small" style="margin-top:6px;white-space:pre-wrap">${esc(a.notities)}</div>` : ''}
   </div>`;
   h += ibanWaarschuwing(id);
+  h += `<datalist id="accounts">${[...new Set(S.loten.map(x => x.account).filter(Boolean))].map(x => `<option value="${esc(x)}">`).join('')}</datalist>`;
   const opbs = S.opbrengsten.filter(o => o.actieId === id);
   if (opbs.length) h += `<h3>Opbrengsten (${eur(opbs.reduce((s, o) => s + opbNetto(o), 0) - inlegKosten(ls))} netto)</h3>` + opbs.map(opbCard).join('') + '<h3>Loten</h3>';
   h += ls.length ? ls.map(l => lotCard(l)).join('') : '<div class="empty">Geen loten in deze actie.</div>';
@@ -631,12 +634,12 @@ const ACTIONS = {
     download('loterij-opzeggen.ics', ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Loterij Tracker//NL', ...ev, 'END:VCALENDAR'].join('\r\n'), 'text/calendar');
   },
   csv() {
-    const kol = ['Loterij', 'Actie', 'Soort', 'Deelnemer', 'IBAN', 'Status', 'Aangemeld op', 'Opzeggen voor', 'Opgezegd op', 'Speelt vanaf', 'Laatste speelmaand', 'Inleg afgeschreven', 'Cadeau ontvangen', 'Lotnummer', 'Notitie'];
+    const kol = ['Loterij', 'Actie', 'Soort', 'Deelnemer', 'IBAN', 'Status', 'Aangemeld op', 'Opzeggen voor', 'Opgezegd op', 'Speelt vanaf', 'Laatste speelmaand', 'Inleg afgeschreven', 'Cadeau ontvangen', 'Lotnummer', 'Account', 'Notitie'];
     const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
     const rows = S.loten.map(l => {
       const a = act(l.actieId) || {}, d = dn(l.deelnemerId) || {};
       return [a.loterij, a.naam, a.type, l.deelnemerId ? label(d) : '', fmtIban(d.iban), l.status, fmt(l.aangemeldOp), fmt(l.deadline), fmt(l.opgezegdOp),
-        l.speeltVanaf ? fmtMaand(l.speeltVanaf) : '', l.laatsteSpeelmaand ? fmtMaand(l.laatsteSpeelmaand) : '', l.inlegBetaald ? 'ja' : '', l.cadeauOntvangen ? 'ja' : '', l.kenmerk, l.notitie].map(q).join(';');
+        l.speeltVanaf ? fmtMaand(l.speeltVanaf) : '', l.laatsteSpeelmaand ? fmtMaand(l.laatsteSpeelmaand) : '', l.inlegBetaald ? 'ja' : '', l.cadeauOntvangen ? 'ja' : '', l.kenmerk, l.account, l.notitie].map(q).join(';');
     });
     download(`loterij-loten-${today()}.csv`, '﻿' + [kol.map(q).join(';'), ...rows].join('\r\n'), 'text/csv');
   },
@@ -696,7 +699,7 @@ document.addEventListener('change', e => {
     save(); render();
   } else if (t.dataset.lotfield) {
     const l = lot(t.dataset.id), f = t.dataset.lotfield;
-    l[f] = t.value || (f === 'kenmerk' || f === 'notitie' ? '' : null);
+    l[f] = t.value.trim() || (f === 'kenmerk' || f === 'notitie' || f === 'account' ? '' : null);
     if (f === 'aangemeldOp' && t.value) l.deadline = addDays(t.value, act(l.actieId)?.opzegNaDagen);
     save(); render();
   } else if (t.id === 'import' && t.files[0]) {
@@ -723,7 +726,7 @@ document.addEventListener('change', e => {
           if (!lot(u.id) && u.actieId && act(u.actieId)) S.loten.push({ ...nieuwLot(u.actieId, u.deelnemerId), id: u.id });
           const l = lot(u.id);
           if (!l) { mis++; return; }
-          ['status', 'aangemeldOp', 'deadline', 'opgezegdOp', 'speeltVanaf', 'laatsteSpeelmaand', 'kenmerk', 'notitie', 'inlegBetaald', 'cadeauOntvangen']
+          ['status', 'aangemeldOp', 'deadline', 'opgezegdOp', 'speeltVanaf', 'laatsteSpeelmaand', 'kenmerk', 'account', 'notitie', 'inlegBetaald', 'cadeauOntvangen']
             .forEach(k => { if (u[k] !== undefined) l[k] = u[k]; });
           if (u.aangemeldOp && !u.deadline) l.deadline = addDays(u.aangemeldOp, act(l.actieId)?.opzegNaDagen);
           n++;
