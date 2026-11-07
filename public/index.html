@@ -200,7 +200,7 @@ async function push() {
 }
 // wijzigingen van andere apparaten/tabbladen ophalen, maar niet terwijl je aan het typen bent
 async function sync() {
-  if (dirty || /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName)) return;
+  if (dirty || $('#opzeg')?.open || /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName)) return;
   try {
     const r = await fetch('api/data', { cache: 'no-store' });
     if (!r.ok) return;
@@ -1022,8 +1022,9 @@ const ACTIONS = {
     inp.oninput = markeer; markeer();
     dlg.returnValue = '';
     dlg.onclose = () => {
-      if (dlg.returnValue !== 'ok' || !inp.value) return;
-      Object.assign(l, { status: 'opgezegd', opgezegdOp: today(), laatsteSpeelmaand: inp.value }); save(); render();
+      if (dlg.returnValue !== 'ok' || !inp.value || !lot(id)) return;
+      // opnieuw opzoeken: de gegevens kunnen intussen van de server zijn herladen
+      Object.assign(lot(id), { status: 'opgezegd', opgezegdOp: today(), laatsteSpeelmaand: inp.value }); save(); render();
       toast(`Opgezegd ✓ – speelt t/m ${fmtMaand(inp.value)}`);
     };
     dlg.showModal();
@@ -1249,6 +1250,7 @@ document.addEventListener('change', e => {
 
 document.addEventListener('submit', e => {
   const f = e.target;
+  if (f.method === 'dialog') return; // dialoogvensters (bijv. opzeggen) sluiten zelf
   e.preventDefault();
   const fd = Object.fromEntries(new FormData(f));
   if (f.id === 'actie-form') {
