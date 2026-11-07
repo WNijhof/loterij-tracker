@@ -123,6 +123,15 @@ th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;le
 #toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:9px 18px;border-radius:999px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:10}
 #toast.show{opacity:1}
 .mono{font-family:ui-monospace,Consolas,monospace;font-size:13.5px}
+dialog#opzeg{border:1px solid var(--border);border-radius:14px;background:var(--card);color:var(--text);padding:20px;width:min(380px,calc(100vw - 32px));box-shadow:0 10px 30px rgba(0,0,0,.25)}
+dialog#opzeg::backdrop{background:rgba(10,12,18,.45)}
+dialog#opzeg h3{margin:0 0 4px;font-size:16px}
+dialog#opzeg p{margin:0 0 14px;color:var(--muted);font-size:14px}
+dialog#opzeg .keuzes{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+dialog#opzeg .keuzes button.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+dialog#opzeg label{display:block;font-size:13px;color:var(--muted);margin-bottom:16px}
+dialog#opzeg input{display:block;width:100%;margin-top:4px}
+dialog#opzeg .actions{display:flex;justify-content:flex-end;gap:8px}
 </style>
 </head>
 <body>
@@ -132,6 +141,13 @@ th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;le
 </div></header>
 <main><div class="wrap" id="app"></div></main>
 <div id="toast"></div>
+<dialog id="opzeg"><form method="dialog">
+  <h3>Lot opgezegd</h3>
+  <p>Wat is de laatste maand dat dit lot nog meespeelt?</p>
+  <div class="keuzes"></div>
+  <label>Laatste speelmaand<input type="month" name="maand" required></label>
+  <div class="actions"><button value="annuleer" formnovalidate>Annuleren</button><button class="primary" value="ok">Opgezegd ✓</button></div>
+</form></dialog>
 
 <script>
 const KEY = 'loterijtracker.v1';
@@ -996,8 +1012,23 @@ const ACTIONS = {
     Object.assign(l, { status: 'aangemeld', aangemeldOp: today(), deadline: addDays(today(), a?.opzegNaDagen) });
     openLots.delete(id); save(); render(); toast('Aangemeld – opzeggen vóór ' + fmt(l.deadline));
   },
-  opgezegd(id) { Object.assign(lot(id), { status: 'opgezegd', opgezegdOp: today() }); save(); render(); toast('Opgezegd ✓'); },
-  heropen(id) { Object.assign(lot(id), { status: 'aangemeld', opgezegdOp: null }); save(); render(); },
+  opgezegd(id) {
+    const l = lot(id), dlg = $('#opzeg'), inp = dlg.querySelector('[name=maand]'), keuzes = dlg.querySelector('.keuzes');
+    const nu = ditJaarMaand(), opties = [0, 1, 2].map(n => addMonths(nu, n));
+    inp.value = l.laatsteSpeelmaand && l.laatsteSpeelmaand >= nu ? l.laatsteSpeelmaand : opties[1];
+    const markeer = () => keuzes.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.m === inp.value));
+    keuzes.innerHTML = opties.map((m, i) => `<button type="button" data-m="${m}">${fmtMaand(m)}${i === 0 ? ' (deze)' : ''}</button>`).join('');
+    keuzes.onclick = e => { const b = e.target.closest('[data-m]'); if (b) { inp.value = b.dataset.m; markeer(); } };
+    inp.oninput = markeer; markeer();
+    dlg.returnValue = '';
+    dlg.onclose = () => {
+      if (dlg.returnValue !== 'ok' || !inp.value) return;
+      Object.assign(l, { status: 'opgezegd', opgezegdOp: today(), laatsteSpeelmaand: inp.value }); save(); render();
+      toast(`Opgezegd ✓ – speelt t/m ${fmtMaand(inp.value)}`);
+    };
+    dlg.showModal();
+  },
+  heropen(id) { Object.assign(lot(id), { status: 'aangemeld', opgezegdOp: null, laatsteSpeelmaand: null }); save(); render(); },
   reset(id) { Object.assign(lot(id), { status: 'te-melden', aangemeldOp: null, deadline: null }); save(); render(); },
   'lot-del'(id) {
     if (!confirm('Dit lot verwijderen?')) return;
@@ -1145,7 +1176,11 @@ document.addEventListener('change', e => {
     if (f === 'actieId') l.loterij = act(t.value)?.loterij || lotLoterij(l);
     l[f] = t.value.trim() || (t.type === 'date' || t.type === 'month' || f === 'deelnemerId' ? null : '');
     if (f === 'aangemeldOp' && t.value) l.deadline = addDays(t.value, act(l.actieId)?.opzegNaDagen);
-    save(); render();
+    save();
+    // datum/maand: tijdens het typen van het jaartal vuurt 'change' per cijfer; pas opnieuw tekenen na verlaten van het veld
+    if ((t.type === 'date' || t.type === 'month') && document.activeElement === t) {
+      if (!t.dataset.wachtRender) { t.dataset.wachtRender = '1'; t.addEventListener('blur', () => render(), { once: true }); }
+    } else render();
   } else if (t.dataset.accRename !== undefined) {
     const oud = t.dataset.accRename, nieuw = t.value.trim();
     if (!nieuw || nieuw === oud) { t.value = oud; return; }
