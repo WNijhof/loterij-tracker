@@ -539,10 +539,10 @@ const lotSort = (x, y) => lotPrioriteit(x) - lotPrioriteit(y)
   || (y.laatsteSpeelmaand || '').localeCompare(x.laatsteSpeelmaand || '')
   || (x.kenmerk || '').localeCompare(y.kenmerk || '');
 
-const LOTFILTERS = { alle: 'Alle', open: 'Nog opzeggen', vast: 'Vaste loten', aanmelden: 'Nog aanmelden', opgezegd: 'Opgezegd' };
+const LOTFILTERS = { alle: 'Alle', actief: `Actief in ${MAANDEN_VOL[new Date().getMonth()]}`, open: 'Nog opzeggen', vast: 'Vaste loten', aanmelden: 'Nog aanmelden', opgezegd: 'Opgezegd' };
 function vLoten(filter = 'open', loterij = 'alle') {
   loterij = decodeURIComponent(loterij);
-  const past = l => filter === 'alle' || (filter === 'open' && l.status === 'aangemeld' && !l.houden) || (filter === 'vast' && l.status === 'aangemeld' && l.houden)
+  const past = l => filter === 'alle' || (filter === 'actief' && speeltDezeMaand(l)) || (filter === 'open' && l.status === 'aangemeld' && !l.houden) || (filter === 'vast' && l.status === 'aangemeld' && l.houden)
     || (filter === 'aanmelden' && l.status === 'te-melden') || (filter === 'opgezegd' && l.status === 'opgezegd');
   const loterijen = [...new Set(S.loten.map(lotLoterij))].filter(Boolean).sort();
   const lijst = S.loten.filter(past).filter(l => loterij === 'alle' || lotLoterij(l) === loterij).sort(lotSort);
@@ -603,7 +603,7 @@ function vOverzicht() {
   h += `<div class="tiles">
     <div class="tile ${late ? 'bad' : ''}"><b>${open.length}</b><span>op te zeggen${late ? ` · ${late} te laat` : ''}</span></div>
     <div class="tile ${risicoMaand ? 'bad' : ''}"><b>${eur(lopendMaand)}</b><span>lopende kosten / maand</span></div>
-    <a class="tile ok" href="#/loten/alle/alle" style="text-decoration:none;color:inherit"><b>${S.loten.filter(speeltDezeMaand).length}</b><span>actieve loten in ${MAANDEN_VOL[new Date().getMonth()]}</span></a>
+    <a class="tile ok" href="#/loten/actief/alle" style="text-decoration:none;color:inherit"><b>${S.loten.filter(speeltDezeMaand).length}</b><span>actieve loten in ${MAANDEN_VOL[new Date().getMonth()]}</span></a>
     <div class="tile"><b>${S.loten.filter(l => l.status === 'opgezegd').length}</b><span>afgerond / opgezegd</span></div>
     <a class="tile" href="#/opbrengsten" style="text-decoration:none;color:inherit"><b>${eur(nettoTotaal())}</b><span>netto opbrengst →</span></a>
   </div>`;
